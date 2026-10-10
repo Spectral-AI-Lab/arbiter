@@ -1,0 +1,440 @@
+"""ARBITER: Attentive Relational Bidirectional Impartial Typed Encoder for Reasoning.
+
+Official inference and decision model with Set-Attention (Inter-Candidate Multi-Head Self-Attention)
+and Dynamic HyperFiLM modulation. Fully autonomous loading from local safetensors without external downloads.
+"""
+from __future__ import annotations
+
+import json
+import logging
+import os
+import re
+from pathlib import Path
+from typing import Any
+
+import torch
+import torch.nn as nn
+from safetensors.torch import load_file as load_safetensors_file
+from transformers import PreTrainedModel, AutoTokenizer
+from transformers.models.embedding_gemma2.modeling_embedding_gemma2 import EmbeddingGemma2TextModel
+
+from .configuration_arbiter import ArbiterConfig
+
+logger = logging.getLogger(__name__)
+
+
+def _build_mlp(in_dim: int = 512, hidden_dim: int = 256, dropout_p: float = 0.1) -> nn.Sequential:
+    return nn.Sequential(
+        nn.Linear(in_dim, hidden_dim, dtype=torch.float32),
+        nn.GELU(),
+        nn.Dropout(dropout_p),
+        nn.Linear(hidden_dim, 1, dtype=torch.float32),
+    )
+
+
+class SetTransformerHyperFiLMHead(nn.Module):
+    """
+    Architecture G: Inter-Candidate Multihead Attention + Dynamic HyperFiLM Modulation.
+    Pipeline:
+    1. Inter-Candidate Multihead Self-Attention (Block E):
+       H_attn = H + alpha_attn * MHA(LN(H), LN(H), LN(H))
+    2. Dynamic Context & Task Modulation (Block F):
+       c = [h_context || e_t]
+       [gamma_raw, beta_raw] = HyperNet(c)
+       gamma = 1.0 + alpha_film * gamma_raw
+       beta = alpha_film * beta_raw
+       H' = gamma * H_attn + beta
+    3. Final Scoring:
+       z_i = MLP(h'_i)
+    """
+
+    def __init__(
+        self,
+        dropout_p: float = 0.1,
+        num_heads: int = 4,
+        cond_dim: int = 512,
+        type_embed_dim: int = 64,
+        hypernet_hidden_dim: int = 128,
+    ):
+        super().__init__()
+        self.head = _build_mlp(512, 256, dropout_p)
+
+        self.ln = nn.LayerNorm(512, dtype=torch.float32)
+        self.mha = nn.MultiheadAttention(
+            embed_dim=512,
+            num_heads=num_heads,
+            batch_first=True,
+            dtype=torch.float32,
+        )
+        self.alpha_attn = nn.Parameter(torch.zeros(1, dtype=torch.float32))
+
+        self.type_to_id = {"choice": 0, "noul": 1, "score": 2}
+        self.type_embed = nn.Embedding(3, type_embed_dim, dtype=torch.float32)
+        self.hypernet = nn.Sequential(
+            nn.Linear(cond_dim + type_embed_dim, hypernet_hidden_dim, dtype=torch.float32),
+            nn.GELU(),
+            nn.Linear(hypernet_hidden_dim, 512 * 2, dtype=torch.float32),
+        )
+        self.alpha_film = nn.Parameter(torch.zeros(1, dtype=torch.float32))
+
+    def forward(
+        self,
+        hidden: torch.Tensor,
+        qtype: str = "choice",
+        cond_vector: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        # hidden: [K, 512]
+        h_norm = self.ln(hidden)
+        attn_out, _ = self.mha(
+            h_norm.unsqueeze(0),
+            h_norm.unsqueeze(0),
+            h_norm.unsqueeze(0),
+            need_weights=False,
+        )
+        attn_out = attn_out.squeeze(0)
+        h_attn = hidden + self.alpha_attn * attn_out
+
+        t_id = torch.tensor(self.type_to_id.get(qtype, 0), device=hidden.device)
+        e_t = self.type_embed(t_id)
+        if cond_vector is None:
+            cond_vector = hidden.mean(dim=0)
+        c = torch.cat([cond_vector, e_t], dim=-1).unsqueeze(0)
+        film_params = self.hypernet(c)
+        gamma_raw, beta_raw = film_params.chunk(2, dim=-1)
+
+        gamma = 1.0 + self.alpha_film * gamma_raw
+        beta = self.alpha_film * beta_raw
+        modulated = gamma * h_attn + beta
+
+        return self.head(modulated).squeeze(-1).float()
+
+
+class ArbiterModel(PreTrainedModel):
+    """
+    ARBITER Decision Model:
+    - Backbone: EmbeddingGemma-2 Text Encoder (512-dim native hidden states)
+    - Decision Head: Architecture G (Set-Attention + HyperFiLM)
+    - Full unified multi-task support: choice, noul (boolean), score (ordinal)
+    """
+    config_class = ArbiterConfig
+    base_model_prefix = "arbiter"
+
+    def __init__(self, config: ArbiterConfig):
+        super().__init__(config)
+        self.config = config
+
+        # Instantiate language model directly from config without downloading Google weights
+        text_config = config.get_text_config()
+        text_config.vocab_size = config.vocab_size
+        self.language_model = EmbeddingGemma2TextModel(text_config)
+        self.language_model.embedding_projection = nn.Identity()
+
+        # Decision head
+        self.decision_head = SetTransformerHyperFiLMHead(
+            dropout_p=0.1,
+            num_heads=config.num_heads,
+            cond_dim=config.hidden_size,
+            type_embed_dim=config.type_embed_dim,
+            hypernet_hidden_dim=config.hypernet_hidden_dim,
+        )
+
+        self.tokenizer = None
+        self.option_token = config.option_token
+        self.option_token_id = config.option_token_id
+
+    @classmethod
+    def from_pretrained(
+        cls,
+        pretrained_model_name_or_path: str | Path,
+        device: str | torch.device | None = None,
+        dtype: torch.dtype | str | None = None,
+        torch_dtype: torch.dtype | str | None = None,
+        local_files_only: bool = False,
+        **kwargs,
+    ) -> ArbiterModel:
+        """
+        Load ARBITER from local directory or Hugging Face Hub repo.
+        """
+        model_path_str = str(pretrained_model_name_or_path)
+        model_path = Path(model_path_str)
+
+        # Resolve remote repo if path does not exist locally
+        if not model_path.exists():
+            try:
+                from huggingface_hub import snapshot_download
+                model_path_str = snapshot_download(
+                    repo_id=model_path_str,
+                    local_files_only=local_files_only,
+                    **kwargs,
+                )
+                model_path = Path(model_path_str)
+            except Exception as e:
+                if local_files_only:
+                    raise FileNotFoundError(f"Local files not found for {model_path_str} and local_files_only=True") from e
+                raise
+
+        # 1. Load config
+        config_file = model_path / "config.json"
+        if config_file.exists():
+            with open(config_file, "r", encoding="utf-8") as f:
+                config_dict = json.load(f)
+            config = ArbiterConfig(**config_dict)
+        else:
+            config = ArbiterConfig()
+
+        # 2. Determine target dtype safely
+        dtype_arg = dtype if dtype is not None else torch_dtype
+        if dtype_arg is None or dtype_arg == "auto":
+            cfg_dt = getattr(config, "dtype", None) or getattr(config, "torch_dtype", None) or "bfloat16"
+            if isinstance(cfg_dt, torch.dtype):
+                target_dtype = cfg_dt
+            elif str(cfg_dt).replace("torch.", "").lower() in ("bfloat16", "bf16"):
+                target_dtype = torch.bfloat16
+            elif str(cfg_dt).replace("torch.", "").lower() in ("float16", "fp16"):
+                target_dtype = torch.float16
+            elif str(cfg_dt).replace("torch.", "").lower() in ("float32", "fp32"):
+                target_dtype = torch.float32
+            else:
+                target_dtype = torch.bfloat16
+        elif isinstance(dtype_arg, torch.dtype):
+            target_dtype = dtype_arg
+        elif isinstance(dtype_arg, str):
+            clean_dt = dtype_arg.replace("torch.", "").lower()
+            if clean_dt in ("bfloat16", "bf16"):
+                target_dtype = torch.bfloat16
+            elif clean_dt in ("float16", "fp16"):
+                target_dtype = torch.float16
+            elif clean_dt in ("float32", "fp32"):
+                target_dtype = torch.float32
+            else:
+                raise ValueError(
+                    f"Unsupported dtype string '{dtype_arg}'. Expected one of 'bfloat16', 'float16', 'float32', or 'auto'."
+                )
+        else:
+            raise ValueError(f"Unsupported dtype type: {type(dtype_arg)}. Expected torch.dtype or str.")
+
+        # 3. Instantiate model
+        model = cls(config)
+
+        # 4. Load weights directly from safetensors or pt
+        safetensors_path = model_path / "model.safetensors"
+        pt_path = model_path / "best_model.pt"
+
+        if safetensors_path.exists():
+            state_dict = load_safetensors_file(str(safetensors_path))
+        elif pt_path.exists():
+            ckpt = torch.load(str(pt_path), map_location="cpu")
+            state_dict = ckpt.get("model_state_dict", ckpt)
+        else:
+            # Fallback search for any .safetensors in directory
+            st_files = list(model_path.glob("*.safetensors"))
+            if st_files:
+                state_dict = load_safetensors_file(str(st_files[0]))
+            else:
+                raise FileNotFoundError(f"No safetensors or pt weights found in {model_path}")
+
+        # Cast state_dict to target dtype and load strictly
+        state_dict_converted = {k: v.to(dtype=target_dtype) for k, v in state_dict.items()}
+        model.to(dtype=target_dtype)
+        model.load_state_dict(state_dict_converted, strict=True)
+
+        # 5. Load tokenizer locally from the directory if present (fully autonomous)
+        has_local_tok = (model_path / "tokenizer.json").exists() or (model_path / "tokenizer_config.json").exists()
+        if has_local_tok:
+            tokenizer = AutoTokenizer.from_pretrained(str(model_path), local_files_only=True)
+        elif not local_files_only:
+            try:
+                tokenizer = AutoTokenizer.from_pretrained(str(model_path))
+            except Exception:
+                tokenizer = AutoTokenizer.from_pretrained(config.base_model_name)
+        else:
+            raise FileNotFoundError(
+                f"Tokenizer files (tokenizer.json) not found in {model_path} with local_files_only=True"
+            )
+
+        if config.option_token not in tokenizer.get_vocab():
+            tokenizer.add_special_tokens({"additional_special_tokens": [config.option_token]})
+
+        model.tokenizer = tokenizer
+        model.option_token_id = tokenizer.convert_tokens_to_ids(config.option_token)
+
+        # Move to target device
+        target_device = device or ("cuda:0" if torch.cuda.is_available() else "cpu")
+        model.to(device=target_device)
+        model.eval()
+
+        return model
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        option_indices: list[list[int]],
+        question_types: list[str] | None = None,
+    ) -> dict[str, torch.Tensor]:
+        batch_size = input_ids.shape[0]
+        max_options = max((len(opts) for opts in option_indices), default=1)
+        qtypes = question_types if question_types is not None else ["choice"] * batch_size
+
+        encoder_out = self.language_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+        )
+        hidden_states = encoder_out.last_hidden_state  # [B, seq_len, 512]
+
+        dev = input_ids.device
+        padded_logits = torch.full((batch_size, max_options), -1e4, device=dev, dtype=torch.float32)
+        mask = torch.zeros((batch_size, max_options), device=dev, dtype=torch.bool)
+
+        for b in range(batch_size):
+            opts = option_indices[b]
+            k = len(opts)
+            if k == 0:
+                continue
+            opts_tensor = torch.tensor(opts, device=dev, dtype=torch.long)
+            opt_hidden = hidden_states[b, opts_tensor, :]  # [k, 512]
+            qtype = qtypes[b] if b < len(qtypes) else "choice"
+            cond_vec = hidden_states[b, 0, :]  # [512] at <bos>
+
+            scores = self.decision_head(opt_hidden, qtype, cond_vector=cond_vec)
+            padded_logits[b, :k] = scores
+            mask[b, :k] = True
+
+        probs = torch.softmax(padded_logits.masked_fill(~mask, -1e4), dim=-1)
+
+        return {
+            "logits": padded_logits,
+            "probabilities": probs,
+            "mask": mask,
+        }
+
+    def decide(
+        self,
+        context: str,
+        instruction: str,
+        criteria: dict[str, str] | list[str] | None,
+        question_type: str = "choice",
+        max_length: int = 4096,
+    ) -> dict[str, Any]:
+        """
+        High-level single-query decision interface.
+        Supports choice, noul, and score question types with contract validation.
+        """
+        if self.tokenizer is None:
+            raise RuntimeError("Model tokenizer is not loaded. Ensure the model was loaded via from_pretrained.")
+
+        # Input contract validations
+        if not isinstance(context, str) or not isinstance(instruction, str):
+            raise TypeError("Both 'context' and 'instruction' must be strings.")
+        if not context.strip():
+            raise ValueError("Context cannot be empty.")
+        if not instruction.strip():
+            raise ValueError("Instruction cannot be empty.")
+
+        if question_type not in ("choice", "noul", "score"):
+            raise ValueError(f"Invalid question_type '{question_type}'. Must be 'choice', 'noul', or 'score'.")
+
+        if question_type == "noul":
+            if criteria is None or (isinstance(criteria, (dict, list)) and len(criteria) == 0):
+                criteria = {"false": "The statement is false.", "true": "The statement is true."}
+            elif len(criteria) != 2:
+                raise ValueError(f"For question_type='noul', criteria must contain exactly 2 options (got {len(criteria)}).")
+        elif question_type in ("choice", "score"):
+            if criteria is None or len(criteria) < 2:
+                raise ValueError(f"For question_type='{question_type}', criteria must contain at least 2 options.")
+
+        if isinstance(criteria, dict):
+            options = [(str(k), str(v)) for k, v in criteria.items()]
+            keys = [str(k) for k in criteria.keys()]
+        else:
+            options = [(str(i), str(desc)) for i, desc in enumerate(criteria)]
+            keys = [str(i) for i in range(len(criteria))]
+
+        # Guard: sanitize raw context/instruction to prevent collision with the internal <OPTION> marker
+        safe_context = re.sub(r"<OPTION>", "[OPTION]", str(context).strip())
+        safe_instruction = re.sub(r"<OPTION>", "[OPTION]", str(instruction).strip())
+
+        header = f"Contexte : {safe_context}\nInstruction : {safe_instruction}\n\n"
+        opt_lines = [
+            f"{self.option_token} {label}: {re.sub(r'<OPTION>', '[OPTION]', str(desc).strip())}" if desc else f"{self.option_token} {label}"
+            for label, desc in options
+        ]
+        prompt = header + "\n".join(opt_lines)
+
+        device = next(self.parameters()).device
+        # Tokenize with max_length truncation (contract: 4096 tokens max)
+        encoded = self.tokenizer(
+            prompt,
+            return_tensors="pt",
+            add_special_tokens=True,
+            truncation=True,
+            max_length=max_length,
+        ).to(device)
+
+        input_ids = encoded["input_ids"]
+        attention_mask = encoded["attention_mask"]
+
+        opt_pos = (input_ids[0] == self.option_token_id).nonzero(as_tuple=True)[0].tolist()
+        if len(opt_pos) != len(options):
+            raise ValueError(
+                f"Option count mismatch: found {len(opt_pos)} option tokens vs {len(options)} options requested. "
+                f"This can happen if prompt length exceeded max_length ({max_length}) and was truncated."
+            )
+
+        with torch.no_grad():
+            out = self.forward(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                option_indices=[opt_pos],
+                question_types=[question_type],
+            )
+            probs = out["probabilities"][0, :len(options)].float().cpu().tolist()
+
+        prob_dict = dict(zip(keys, probs))
+        best_idx = int(torch.tensor(probs).argmax().item())
+        best_key = keys[best_idx]
+
+        res = {
+            "selected_key": best_key,
+            "probabilities": prob_dict,
+            "confidence": probs[best_idx],
+        }
+
+        if question_type == "score":
+            res["score"] = sum(i * p for i, p in enumerate(probs))
+        elif question_type == "noul":
+            res["noul"] = prob_dict.get("true", probs[-1])
+
+        return res
+
+    def predict(self, state: Any, questions: dict[str, Any]) -> dict[str, Any]:
+        """
+        Multi-question dictionary interface compatible with Laya and benchmark suites.
+        """
+        context_str = json.dumps(state, ensure_ascii=False) if isinstance(state, dict) else str(state)
+        answers = {}
+
+        for qid, q_data in questions.items():
+            instruction = q_data.get("instructions", "")
+            qtype = q_data.get("type", "choice")
+            criteria = q_data.get("criteria", None)
+
+            res = self.decide(
+                context=context_str,
+                instruction=instruction,
+                criteria=criteria,
+                question_type=qtype,
+            )
+
+            ans_entry = {"probabilities": res["probabilities"]}
+            if qtype == "choice":
+                ans_entry["choice"] = res["selected_key"]
+            elif qtype == "noul":
+                ans_entry["noul"] = res["noul"]
+            elif qtype == "score":
+                ans_entry["score"] = res["score"]
+                ans_entry["choice"] = res["selected_key"]
+
+            answers[qid] = ans_entry
+
+        return {"answers": answers}
