@@ -13,8 +13,8 @@ Built upon the **ARBITER** relational architecture (Inter-Candidate Set-Attentio
 
 ## Key Features
 
-* **Set-Attention Over Candidates (Block E)**: Candidates attend to each other via a multi-head self-attention mechanism before decision projection, enabling relational ranking and order robustness.
-* **Dynamic Context & Task HyperFiLM (Block F)**: Affine modulation conditioned on context embeddings and task type embeddings (`choice`, `noul`, `score`).
+* **Set-Attention Over Candidates**: Candidates attend to each other via a multi-head self-attention mechanism before decision projection, enabling relational ranking and order robustness.
+* **Dynamic Context & Task HyperFiLM**: Affine modulation conditioned on context embeddings and task type embeddings (`choice`, `noul`, `score`).
 * **Multi-Format Native Inference**:
   * **`choice`**: Polytomous classification and categorical routing.
   * **`noul`**: Strict boolean factuality and claim verification.

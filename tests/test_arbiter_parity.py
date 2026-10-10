@@ -42,17 +42,21 @@ def main():
         return
 
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    pt_checkpoint = ROOT / "checkpoints/reference_booster.pt"
+    pt_checkpoint = ROOT / "checkpoints/reference_model.pt"
     if not pt_checkpoint.exists():
-        fallback = BENCHMARKING_ROOT / "checkpoints/g2m_booster_65k/exported/g2m_grand_booster_bf16.pt"
-        if fallback.exists():
-            pt_checkpoint = fallback
+        fallback_env = os.environ.get("REFERENCE_PT_PATH")
+        if fallback_env and Path(fallback_env).exists():
+            pt_checkpoint = Path(fallback_env)
         else:
-            msg = f"Reference training checkpoint not found at {pt_checkpoint} or {fallback}."
-            if pytest is not None:
-                pytest.skip(msg)
-            print(f"SKIPPED: {msg}")
-            return
+            default_fallback = BENCHMARKING_ROOT / "checkpoints/reference_model.pt"
+            if default_fallback.exists():
+                pt_checkpoint = default_fallback
+            else:
+                msg = "Reference training checkpoint not found; skipping internal comparison."
+                if pytest is not None:
+                    pytest.skip(msg)
+                print(f"SKIPPED: {msg}")
+                return
     safetensors_dir = ROOT / "checkpoints/arbiter-272m"
 
     print(f"Loading reference DecisionPredictor from {pt_checkpoint}...")

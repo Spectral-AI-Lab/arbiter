@@ -36,9 +36,9 @@ class SetTransformerHyperFiLMHead(nn.Module):
     """
     ARBITER Relational Decision Head: Inter-Candidate Multihead Attention + Dynamic HyperFiLM Modulation.
     Pipeline:
-    1. Inter-Candidate Multihead Self-Attention (Block E):
+    1. Inter-Candidate Multihead Self-Attention:
        H_attn = H + alpha_attn * MHA(LN(H), LN(H), LN(H))
-    2. Dynamic Context & Task Modulation (Block F):
+    2. Dynamic Context & Task Modulation:
        c = [h_context || e_t]
        [gamma_raw, beta_raw] = HyperNet(c)
        gamma = 1.0 + alpha_film * gamma_raw
