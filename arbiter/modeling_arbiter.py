@@ -155,8 +155,16 @@ class ArbiterModel(PreTrainedModel):
         """
         Load ARBITER from local directory or Hugging Face Hub repo.
         """
+        hub_options = {"revision", "cache_dir", "token", "force_download"}
+        unsupported = set(kwargs) - hub_options
+        if unsupported:
+            raise TypeError(f"Unsupported loading arguments: {sorted(unsupported)}. "
+                            "Use device for single-device placement; device_map is not supported.")
         model_path_str = str(pretrained_model_name_or_path)
         model_path = Path(model_path_str)
+
+        if model_path.exists() and kwargs:
+            raise TypeError("Hub download arguments apply only to remote repositories, not local paths.")
 
         # Resolve remote repo if path does not exist locally
         if not model_path.exists():
@@ -326,7 +334,7 @@ class ArbiterModel(PreTrainedModel):
             "mask": mask,
         }
 
-    def decide(
+    def _prepare_decision(
         self,
         context: str,
         instruction: str,
@@ -350,6 +358,8 @@ class ArbiterModel(PreTrainedModel):
         if not instruction.strip():
             raise ValueError("Instruction cannot be empty.")
 
+        if isinstance(max_length, bool) or not isinstance(max_length, int) or max_length <= 0:
+            raise ValueError("max_length must be a positive integer")
         if max_length > self.config.max_position_embeddings:
             raise ValueError(
                 f"Requested max_length ({max_length}) exceeds model max_position_embeddings "
@@ -413,6 +423,10 @@ class ArbiterModel(PreTrainedModel):
         else:
             raise TypeError(f"Invalid type for criteria: {type(criteria)}. Expected dict or list.")
 
+        if any(self.option_token in key for key in keys):
+            raise ValueError("Criterion keys must not contain the reserved <OPTION> marker. "
+                             "Rename the key; descriptions may contain literal marker text.")
+
         # Guard: sanitize raw context/instruction to prevent collision with the internal <OPTION> marker
         safe_context = re.sub(r"<OPTION>", "[OPTION]", str(context).strip())
         safe_instruction = re.sub(r"<OPTION>", "[OPTION]", str(instruction).strip())
@@ -426,7 +440,8 @@ class ArbiterModel(PreTrainedModel):
         prompt = header + options_text
 
         # Length and Truncation Contract Check
-        raw_token_count = len(self.tokenizer.encode(prompt, add_special_tokens=True))
+        ids = self.tokenizer.encode(prompt, add_special_tokens=True)
+        raw_token_count = len(ids)
         is_truncated = False
 
         if raw_token_count > max_length:
@@ -451,7 +466,8 @@ class ArbiterModel(PreTrainedModel):
                 truncated_context = self.tokenizer.decode(ctx_ids, skip_special_tokens=True)
                 header = f"Contexte : {truncated_context}\nInstruction : {safe_instruction}\n\n"
                 prompt = header + options_text
-                current_tokens = len(self.tokenizer.encode(prompt, add_special_tokens=True))
+                ids = self.tokenizer.encode(prompt, add_special_tokens=True)
+                current_tokens = len(ids)
                 if current_tokens <= max_length or len(ctx_ids) == 0:
                     break
                 overshoot = max(1, current_tokens - max_length)
@@ -459,35 +475,20 @@ class ArbiterModel(PreTrainedModel):
 
             is_truncated = True
 
-        device = next(self.parameters()).device
-        encoded = self.tokenizer(
-            prompt,
-            return_tensors="pt",
-            add_special_tokens=True,
-            truncation=False,
-        ).to(device)
-
-        input_ids = encoded["input_ids"]
-        attention_mask = encoded["attention_mask"]
-
-        opt_pos = (input_ids[0] == self.option_token_id).nonzero(as_tuple=True)[0].tolist()
+        opt_pos = [i for i, token in enumerate(ids) if token == self.option_token_id]
         if len(opt_pos) != len(options):
-            raise ValueError(
-                f"Option count mismatch: found {len(opt_pos)} option tokens vs {len(options)} options requested. "
-                "Candidate options were damaged or desynchronized."
-            )
+            raise ValueError("Option count mismatch: candidate markers are damaged or desynchronized.")
+        return dict(ids=ids, positions=opt_pos, keys=keys, question_type=question_type,
+                    raw_token_count=raw_token_count, is_truncated=is_truncated)
 
-        with torch.no_grad():
-            out = self.forward(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                option_indices=[opt_pos],
-                question_types=[question_type],
-            )
-            probs = out["probabilities"][0, :len(options)].float().cpu().tolist()
-
+    @staticmethod
+    def _decision_result(prepared, probs):
+        keys = prepared["keys"]
+        question_type = prepared["question_type"]
+        raw_token_count = prepared["raw_token_count"]
+        is_truncated = prepared["is_truncated"]
         prob_dict = dict(zip(keys, probs))
-        best_idx = int(torch.tensor(probs).argmax().item())
+        best_idx = max(range(len(probs)), key=probs.__getitem__)
         best_key = keys[best_idx]
 
         res = {
@@ -505,34 +506,108 @@ class ArbiterModel(PreTrainedModel):
 
         return res
 
-    def predict(self, state: Any, questions: dict[str, Any]) -> dict[str, Any]:
+    def decide(
+        self, context: str, instruction: str,
+        criteria: dict[str, str] | list[str] | None,
+        question_type: str = "choice", max_length: int = 4096,
+        allow_truncation: bool = False,
+    ) -> dict[str, Any]:
+        """Run one decision using the same preparation and inference path as batching."""
+        return self.decide_batch([dict(context=context, instruction=instruction,
+            criteria=criteria, question_type=question_type, max_length=max_length,
+            allow_truncation=allow_truncation)], batch_size=1)[0]
+
+    @torch.inference_mode()
+    def decide_batch(
+        self, requests: list[dict[str, Any]], *, batch_size: int = 8,
+        max_batch_tokens: int = 8192,
+        max_attention_elements: int = 16777216,
+        max_length: int = 4096, allow_truncation: bool = False,
+    ) -> list[dict[str, Any]]:
+        """Length-bucketed inference, returning results in original request order.
+
+        Budgets bound padded B*L and B*L², not actual device memory in bytes.
+        A request that cannot fit alone is rejected before any forward pass.
+        Per-request max_length/allow_truncation override batch defaults.
+        All inputs are validated before execution. Use bounded request lists in services.
         """
-        Multi-question dictionary interface compatible with Laya and benchmark suites.
-        """
-        context_str = json.dumps(state, ensure_ascii=False) if isinstance(state, dict) else str(state)
-        answers = {}
+        for name, value in (("batch_size", batch_size),
+                            ("max_batch_tokens", max_batch_tokens),
+                            ("max_attention_elements", max_attention_elements)):
+            if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+                raise ValueError(f"{name} must be a positive integer")
+        if self.training:
+            raise RuntimeError("Call model.eval() before inference.")
+        prepared = []
+        for i, request in enumerate(requests):
+            try:
+                item = self._prepare_decision(**dict(
+                    dict(max_length=max_length, allow_truncation=allow_truncation), **request))
+                length = len(item["ids"])
+                if length > max_batch_tokens or length * length > max_attention_elements:
+                    raise ValueError("Request exceeds batch budget even as a singleton")
+                prepared.append(item)
+            except (ValueError, TypeError) as exc:
+                raise type(exc)(f"Request {i}: {exc}") from exc
+        order = sorted(range(len(prepared)), key=lambda i: len(prepared[i]["ids"]))
+        batches, current = [], []
+        for index in order:
+            length = len(prepared[index]["ids"])
+            size = len(current) + 1
+            if current and (size > batch_size or size * length > max_batch_tokens
+                            or size * length * length > max_attention_elements):
+                batches.append(current)
+                current = []
+            current.append(index)
+        if current:
+            batches.append(current)
+        results = [None] * len(prepared)
+        device = next(self.parameters()).device
+        pad_id = self.tokenizer.pad_token_id
+        if pad_id is None:
+            raise ValueError("Tokenizer must define pad_token_id")
+        for batch in batches:
+            length = max(len(prepared[i]["ids"]) for i in batch)
+            ids = torch.full((len(batch), length), pad_id, dtype=torch.long)
+            attention = torch.zeros_like(ids)
+            for row, index in enumerate(batch):
+                tokens = prepared[index]["ids"]
+                ids[row, :len(tokens)] = torch.tensor(tokens, dtype=torch.long)
+                attention[row, :len(tokens)] = 1
+            out = self.forward(input_ids=ids.to(device), attention_mask=attention.to(device),
+                option_indices=[prepared[i]["positions"] for i in batch],
+                question_types=[prepared[i]["question_type"] for i in batch])
+            probabilities = out["probabilities"].float().cpu().tolist()
+            for row, index in enumerate(batch):
+                item = prepared[index]
+                results[index] = self._decision_result(item, probabilities[row][:len(item["keys"])])
+        return results
 
-        for qid, q_data in questions.items():
-            instruction = q_data.get("instructions", "")
-            qtype = q_data.get("type", "choice")
-            criteria = q_data.get("criteria", None)
+    def predict(self, state: Any, questions: dict[str, Any], **batch_options) -> dict[str, Any]:
+        """Batch the questions for one state; preserve the existing answer schema."""
+        return self.predict_batch([dict(state=state, questions=questions)], **batch_options)[0]
 
-            res = self.decide(
-                context=context_str,
-                instruction=instruction,
-                criteria=criteria,
-                question_type=qtype,
-            )
-
-            ans_entry = {"probabilities": res["probabilities"]}
-            if qtype == "choice":
-                ans_entry["choice"] = res["selected_key"]
-            elif qtype == "noul":
-                ans_entry["noul"] = res["noul"]
-            elif qtype == "score":
-                ans_entry["score"] = res["score"]
-                ans_entry["choice"] = res["selected_key"]
-
-            answers[qid] = ans_entry
-
-        return {"answers": answers}
+    def predict_batch(self, requests: list[dict[str, Any]], **batch_options) -> list[dict[str, Any]]:
+        """Batch questions across states, then restore state and question order."""
+        flat, locations = [], []
+        outputs = [{"answers": {}} for _ in requests]
+        for index, request in enumerate(requests):
+            state, questions = request["state"], request["questions"]
+            context = json.dumps(state, ensure_ascii=False) if isinstance(state, (dict, list)) else str(state)
+            for qid, question in questions.items():
+                qtype = question.get("type", "choice")
+                if ("instructions" in question and "instruction" in question
+                        and question["instructions"] != question["instruction"]):
+                    raise ValueError(f"Question {qid!r}: conflicting instruction and instructions values")
+                instruction = question.get("instructions", question.get("instruction", ""))
+                flat.append(dict(context=context, instruction=instruction,
+                    criteria=question.get("criteria"), question_type=qtype))
+                locations.append((index, qid, qtype))
+        for (index, qid, qtype), result in zip(locations, self.decide_batch(flat, **batch_options)):
+            answer = {"probabilities": result["probabilities"]}
+            if qtype in ("choice", "score"):
+                answer["choice"] = result["selected_key"]
+            if qtype in ("score", "noul"):
+                answer[qtype] = result[qtype]
+            outputs[index]["answers"][qid] = answer
+        return outputs
