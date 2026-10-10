@@ -20,7 +20,7 @@ Built upon the **ARBITER** relational architecture (Inter-Candidate Set-Attentio
   * **`noul`**: Strict boolean factuality and claim verification.
   * **`score`**: Ordinal regression grading and severity scoring.
 * **Order & Permutation Robustness**: 82.8% decision consistency across candidate permutations, reducing position-0 bias to 22.6% (compared to 56.6% in standard pointwise classifiers).
-* **High Efficiency & Compactness**: Native **BF16 export of 544 MB** (`model.safetensors`), peak allocated VRAM of **759 MiB** (1,562 MiB reserved), median GPU latency of **15.36 ms** (RTX 5090, batch 1).
+* **High Efficiency & Compactness**: Native **BF16 export of 544 MB** (`model.safetensors`), peak allocated VRAM of **759 MiB** (1,562 MiB reserved), median GPU latency of **15.36 ms** (RTX 5090).
 * **Autonomous Loading**: Self-contained weights and tokenizer; no external Hugging Face downloads required at runtime.
 
 ---
