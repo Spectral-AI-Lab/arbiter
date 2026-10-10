@@ -364,13 +364,21 @@ class ArbiterModel(PreTrainedModel):
             if criteria is None or (isinstance(criteria, (dict, list)) and len(criteria) == 0):
                 criteria = {"false": "The statement is false.", "true": "The statement is true."}
             elif isinstance(criteria, dict):
-                clean_dict = {str(k).lower().strip(): str(v) for k, v in criteria.items()}
-                if set(clean_dict.keys()) != {"false", "true"}:
+                raw_keys = list(criteria.keys())
+                if len(raw_keys) != 2:
+                    raise ValueError(f"For question_type='noul', criteria must contain exactly 2 options (got {len(raw_keys)}).")
+                norm_keys = [str(k).lower().strip() for k in raw_keys]
+                if len(set(norm_keys)) != len(norm_keys):
+                    raise ValueError(
+                        f"Criteria contains conflicting or colliding boolean keys: {raw_keys}. "
+                        "Cannot resolve ambiguous duplicate boolean representations."
+                    )
+                if set(norm_keys) != {"false", "true"}:
                     raise ValueError(
                         f"For question_type='noul', criteria dictionary keys must be canonical ('false' and 'true'). "
-                        f"Got: {list(criteria.keys())}. Arbitrary keys are rejected to prevent semantic inversion."
+                        f"Got: {raw_keys}. Arbitrary keys are rejected to prevent semantic inversion."
                     )
-                # Enforce canonical ordering: false, then true
+                clean_dict = {norm_keys[i]: str(criteria[raw_keys[i]]) for i in range(len(raw_keys))}
                 criteria = {"false": clean_dict["false"], "true": clean_dict["true"]}
             elif isinstance(criteria, (list, tuple)):
                 if len(criteria) != 2:
@@ -393,17 +401,17 @@ class ArbiterModel(PreTrainedModel):
                 raise ValueError(f"For question_type='{question_type}', criteria must contain at least 2 options.")
 
         if isinstance(criteria, dict):
-            options = [(str(k), str(v)) for k, v in criteria.items()]
-            keys = [str(k) for k in criteria.keys()]
+            raw_keys = list(criteria.keys())
+            norm_keys = [str(k).strip() for k in raw_keys]
+            if len(set(norm_keys)) != len(norm_keys):
+                raise ValueError(f"Criteria contains duplicate or colliding keys: {raw_keys}")
+            options = [(norm_keys[i], str(criteria[raw_keys[i]])) for i in range(len(raw_keys))]
+            keys = norm_keys
         elif isinstance(criteria, (list, tuple)):
             options = [(str(i), str(desc)) for i, desc in enumerate(criteria)]
             keys = [str(i) for i in range(len(criteria))]
         else:
             raise TypeError(f"Invalid type for criteria: {type(criteria)}. Expected dict or list.")
-
-        # Validate key uniqueness after string conversion
-        if len(set(keys)) != len(keys):
-            raise ValueError(f"Criteria contains duplicate keys after string normalization: {keys}")
 
         # Guard: sanitize raw context/instruction to prevent collision with the internal <OPTION> marker
         safe_context = re.sub(r"<OPTION>", "[OPTION]", str(context).strip())
@@ -435,11 +443,20 @@ class ArbiterModel(PreTrainedModel):
                     f"Instruction and candidate options alone require {overhead_tokens} tokens, exceeding max_length ({max_length}). "
                     "Cannot safely fit candidate options within budget."
                 )
-            avail_ctx_tokens = max_length - overhead_tokens
+            avail_ctx_tokens = max(0, max_length - overhead_tokens)
             ctx_ids = self.tokenizer.encode(safe_context, add_special_tokens=False)[:avail_ctx_tokens]
-            truncated_context = self.tokenizer.decode(ctx_ids, skip_special_tokens=True)
-            header = f"Contexte : {truncated_context}\nInstruction : {safe_instruction}\n\n"
-            prompt = header + options_text
+
+            # Iterative reduction loop to strictly guarantee token budget
+            while True:
+                truncated_context = self.tokenizer.decode(ctx_ids, skip_special_tokens=True)
+                header = f"Contexte : {truncated_context}\nInstruction : {safe_instruction}\n\n"
+                prompt = header + options_text
+                current_tokens = len(self.tokenizer.encode(prompt, add_special_tokens=True))
+                if current_tokens <= max_length or len(ctx_ids) == 0:
+                    break
+                overshoot = max(1, current_tokens - max_length)
+                ctx_ids = ctx_ids[:-overshoot]
+
             is_truncated = True
 
         device = next(self.parameters()).device

@@ -127,6 +127,12 @@ def test_input_contract_rejections():
     with raises(ValueError, match="keys must be canonical"):
         model.decide("ctx", "inst", {"yes": "true", "no": "false"}, question_type="noul")
 
+    # 4b. Colliding / duplicate boolean keys in noul
+    with raises(ValueError):
+        model.decide("ctx", "inst", {False: "first", "false": "replacement", True: "yes"}, question_type="noul")
+    with raises(ValueError, match="conflicting or colliding boolean keys"):
+        model.decide("ctx", "inst", {False: "first", "false": "second"}, question_type="noul")
+
     # 5. Overlength input rejection when allow_truncation=False
     with raises(ValueError, match="exceeds max_length"):
         model.decide(
@@ -157,6 +163,21 @@ def test_safe_truncation_preserves_options():
     assert res["selected_key"] in ["A", "B"]
     assert res["truncated"] is True
     assert "input_tokens" in res
+
+    # Edge case: severe truncation budget down to 30 tokens
+    res_tight = model.decide(
+        context="a" * 1000,
+        instruction="Choose",
+        criteria={"a": "first", "b": "second"},
+        max_length=30,
+        allow_truncation=True,
+    )
+    assert res_tight["selected_key"] in ["a", "b"]
+    assert res_tight["truncated"] is True
+    # Verify that the re-tokenized prompt strictly respects budget <= 30
+    prompt_tight = f"Contexte : \nInstruction : Choose\n\n<OPTION> a: first\n<OPTION> b: second"
+    overhead = len(model.tokenizer.encode(prompt_tight, add_special_tokens=True))
+    assert overhead <= 30
 
 
 def test_noul_strict_true_probability():
