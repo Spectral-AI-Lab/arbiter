@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arbiter"
+version = "1.0.0"
+description = "ARBITER: Attentive Relational Bidirectional Impartial Typed Encoder for Reasoning"
+readme = "checkpoints/arbiter-272m/README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+    {name = "Seif Attoui"},
+    {name = "Ichrak Mokhtari"}
+]
+dependencies = [
+    "torch>=2.0.0",
+    "transformers>=5.19.0",
+    "safetensors>=0.4.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["arbiter*"]
