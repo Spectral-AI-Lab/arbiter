@@ -147,3 +147,24 @@ Expected output:
 
 * **Source Code (`arbiter/`)**: Released under the **Apache-2.0 License**. See [LICENSE](LICENSE) for details.
 * **Model Weights (`checkpoints/arbiter-272m/model.safetensors`)**: Derived from `google/embeddinggemma-2` and fine-tuned on relational decision data. Weights are subject to the **Gemma Terms of Use**.
+
+---
+
+## Authors & Contributors
+
+* **Seif Attoui** (Equal contribution)
+* **Ichrak Mokhtari** (Equal contribution)
+
+---
+
+## Citation
+
+```bibtex
+@misc{arbiter2026,
+  title={ARBITER: Attentive Relational Bidirectional Impartial Typed Encoder for Reasoning},
+  author={Attoui, Seif and Mokhtari, Ichrak},
+  year={2026},
+  note={Equal contribution},
+  howpublished={\url{https://huggingface.co/spectral-ai-lab/arbiter-272m}},
+}
+```
