@@ -7,7 +7,7 @@
 
 **ARBITER** is an industrial-grade, ultra-compact foundation encoder designed for **decision-making, routing, and relational structured reasoning** in autonomous AI agents and enterprise production systems.
 
-Built upon **Architecture G** (Inter-Candidate Set-Attention & Dynamic HyperFiLM Modulation), ARBITER jointly encodes context, instructions, and candidate options, allowing competing choices to attend to one another rather than being evaluated in isolation.
+Built upon the **ARBITER** relational architecture (Inter-Candidate Set-Attention & Dynamic HyperFiLM Modulation), ARBITER jointly encodes context, instructions, and candidate options, allowing competing choices to attend to one another rather than being evaluated in isolation.
 
 ---
 
@@ -20,7 +20,7 @@ Built upon **Architecture G** (Inter-Candidate Set-Attention & Dynamic HyperFiLM
   * **`noul`**: Strict boolean factuality and claim verification.
   * **`score`**: Ordinal regression grading and severity scoring.
 * **Order & Permutation Robustness**: 82.8% decision consistency across candidate permutations, reducing position-0 bias to 22.6% (compared to 56.6% in standard pointwise classifiers).
-* **High Efficiency & Compactness**: Native **BF16 export of 544 MB** (`model.safetensors`), allocated VRAM of **1,294 MiB**, median GPU latency of **15.36 ms** (RTX 5090, batch 1).
+* **High Efficiency & Compactness**: Native **BF16 export of 544 MB** (`model.safetensors`), peak allocated VRAM of **759 MiB** (1,562 MiB reserved), median GPU latency of **15.36 ms** (RTX 5090, batch 1).
 * **Autonomous Loading**: Self-contained weights and tokenizer; no external Hugging Face downloads required at runtime.
 
 ---
@@ -124,6 +124,27 @@ arbiter/
 ├── pyproject.toml                   # Standard PEP 517/621 packaging metadata
 ├── LICENSE                          # Apache-2.0 License for source code
 └── README.md                        # Documentation
+```
+
+---
+
+## Reproducing Empirical Benchmarks
+
+The frozen evaluation harness and evaluation request suites are packaged within [`benchmark/`](benchmark/):
+
+```bash
+# Install benchmark dependencies
+pip install -e .[benchmark]
+
+# Run the 23 public requested suites (9,252 decisions: SST-2, TREC, Banking77, Fast Decisions)
+python benchmark/run.py --model arbiter-272m \
+  --data benchmark/data/public_requested_v1/cases.jsonl \
+  --device cuda:0 --output results/public_benchmark
+
+# Run the 60 historical suites (21,915 decisions: MASSIVE, Typed Decisions, etc.)
+python benchmark/run.py --model arbiter-272m \
+  --data benchmark/data/cases.jsonl \
+  --device cuda:0 --output results/historical_benchmark
 ```
 
 ---

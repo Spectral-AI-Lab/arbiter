@@ -1,0 +1,175 @@
+{
+  "upstream_commit": "custom-public-eval-v1",
+  "cases_sha256": "fc111728bed30ce1678de18d82410e8892ef4184a54b7734f633bb9fb1931460",
+  "cases": 6452,
+  "questions": 9252,
+  "sources": [
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "agent_handoff.jsonl",
+      "split": "public development",
+      "sha256": "7c086a3a6a0014fc53d76df3912b93e1b5e4c293d92ab36f1620e5346c3269f8"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "banking_intent.jsonl",
+      "split": "public development",
+      "sha256": "43af4aafdf6aeca74400505acbe528d1605aacb1097e1e1c0a169e9dfb6b5a77"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "benefits_request.jsonl",
+      "split": "public development",
+      "sha256": "a37c96197152006fbb46e8ea0099dc6ab89feafbca424d21bd57b3f7ae3b235b"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "clinic_request.jsonl",
+      "split": "public development",
+      "sha256": "84392b5b6de98c6cf7b474b45b6cffd19ab581770b89fab5d3eb5c77e9397652"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "document_type.jsonl",
+      "split": "public development",
+      "sha256": "87798b1b7c57a553fa82b1c15495b4bcefcf9552e80185673f00e733d59552d7"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "email_triage.jsonl",
+      "split": "public development",
+      "sha256": "779fdef3ad22d1f8fc0b8b81a15b7a591546ff2f5df3d4a850884e08033b11e0"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "news_topic.jsonl",
+      "split": "public development",
+      "sha256": "c31f7710592c2f31f3634930da4840b535ceccd14a3092521547bc9c0f0a6b17"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "paper_field.jsonl",
+      "split": "public development",
+      "sha256": "bb4513faf7616d2ee21694ee62fdc222b4e0e86a2ac0601298b23c538d23e5d0"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "product_feedback.jsonl",
+      "split": "public development",
+      "sha256": "0b44b04d361cf29fc95728a5c1cae4506f42545fe1cb39af53b835287cba001f"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "restaurant_review.jsonl",
+      "split": "public development",
+      "sha256": "64bf7cd3e498045f337956bfec1e002a456cb9aac02c23cac2911fd902914a67"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "review_sentiment.jsonl",
+      "split": "public development",
+      "sha256": "413e8f6f81ce048d3e17f39ecd11cd28c1443253712a0930cfe8063bd1d82616"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "screen_tags.jsonl",
+      "split": "public development",
+      "sha256": "5433a6cb7d67e88de2c9b9443bf3291d91ce89be4a7ea631b93d71d8b56e227b"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "sports_recap.jsonl",
+      "split": "public development",
+      "sha256": "b2e1e6e174650d8b6a114f16dbacbd8b62f93ee77c3967c23d322e9848dac1b3"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "support_intent.jsonl",
+      "split": "public development",
+      "sha256": "a293e95915be740dab18e0bba4d9ca1e31ce9ce2f86f127080ad172cdf89ce72"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "support_topic.jsonl",
+      "split": "public development",
+      "sha256": "e7f41083889f229bf7eae58c48b42e0587d397dbfc959966bbfc379197102ed6"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "ticket_route.jsonl",
+      "split": "public development",
+      "sha256": "8660f5b7bfc6f2475d5aaf2d3202a62d2c647ed49a950dc2dd04d76d14cffe08"
+    },
+    {
+      "repo": "fastino/fast-decisions",
+      "revision": "35afb79a0f611a1db44380e855ac2a821b0a4da1",
+      "file": "travel_request.jsonl",
+      "split": "public development",
+      "sha256": "6e596454de299d765d1d104e90d93543218f06e42b8b55bfc614cd2c8981ebfb"
+    },
+    {
+      "repo": "nyu-mll/glue",
+      "revision": "bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c",
+      "config": "sst2",
+      "split": "validation (test labels unavailable)"
+    },
+    {
+      "repo": "CogComp/trec",
+      "revision": "65752bf53af25bc935a0dce92fb5b6c930728450",
+      "split": "test",
+      "task": "coarse six-class"
+    },
+    {
+      "repo": "PolyAI/banking77",
+      "revision": "90d4e2ee5521c04fc1488f065b8b083658768c57",
+      "split": "test",
+      "loader": "original_csv",
+      "csv_url": "https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/57ec275d8078af65b7731c2a98be812d844a6d6b/banking_data/test.csv",
+      "csv_revision": "57ec275d8078af65b7731c2a98be812d844a6d6b",
+      "csv_sha256": "d12d6e3bc4c3103966ae786dc435913c0c563dfa328f5a3646d0e62cfeeb474d",
+      "label_schema_sha256": "0e2b20c18def828886300332b15c6f647b77cdc289d1b49fffe65d8fde1d0834"
+    }
+  ],
+  "suites": {
+    "fast_single.agent_handoff": 100,
+    "fast_single.banking_intent": 100,
+    "fast_single.benefits_request": 100,
+    "fast_single.clinic_request": 100,
+    "fast_single.document_type": 100,
+    "fast_single.email_triage": 100,
+    "fast_single.news_topic": 100,
+    "fast_single.paper_field": 100,
+    "fast_multilabel.product_feedback": 100,
+    "fast_single.product_feedback": 100,
+    "fast_multilabel.restaurant_review": 100,
+    "fast_single.restaurant_review": 100,
+    "fast_single.review_sentiment": 100,
+    "fast_multilabel.screen_tags": 100,
+    "fast_single.screen_tags": 100,
+    "fast_single.sports_recap": 100,
+    "fast_single.support_intent": 100,
+    "fast_single.support_topic": 100,
+    "fast_single.ticket_route": 100,
+    "fast_single.travel_request": 100,
+    "public.sst2_validation": 872,
+    "public.trec_coarse_test": 500,
+    "public.banking77_test": 3080
+  },
+  "protocol": "Fast single-label all labels unchanged, numeric heads treated as choice. Multilabel converted to independent noul decisions, reported separately. No test prompt tuning. Typed/MASSIVE reused from prior frozen benchmark."
+}

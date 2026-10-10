@@ -1,0 +1,1377 @@
+{
+  "upstream_commit": "3cf26cbcb18725dbc2d127bb8bb2c4c43243ae63",
+  "groups": [
+    "typed",
+    "multilingual",
+    "english",
+    "apps"
+  ],
+  "seed": 13,
+  "dataset_revisions": {
+    "LocalLLaMA/typed-decisions": "d0e2f0c42fef86cc15d1688d25a19f5ba7c85b18",
+    "mteb/amazon_massive_intent": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+    "mteb/amazon_massive_scenario": "58871793b91addb7c5f7afff26ccf08737fb6697",
+    "facebook/xnli": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+    "SetFit/sst5": "e51bdcd8cd3a30da231967c1a249ba59361279a3",
+    "dair-ai/emotion": "cab853a1dbdf4c42c2b3ef2173804746df8825fe",
+    "deepset/prompt-injections": "4f61ecb038e9c3fb77e21034b22511b523772cdd",
+    "PolyAI/banking77": "90d4e2ee5521c04fc1488f065b8b083658768c57",
+    "fancyzhx/ag_news": "eb185aade064a813bc0b7f42de02595523103ca4",
+    "google/boolq": "35b264d03638db9f4ce671b711558bf7ff0f80d5",
+    "mteb/banking77": "18072d2685ea682290f7b8924d94c62acc19c0b2",
+    "Tobi-Bueck/customer-support-tickets": "ddf1c81a5475992c4fa6752bf1e8b4e31f07bbeb",
+    "SetFit/enron_spam": "1916f66c89d52221ae33eb57d44498b4f3a5df22",
+    "zefang-liu/phishing-email-dataset": "34085a032c123ca237f314a01a67909cdea35e34",
+    "lmsys/toxic-chat": "29df8e4dba60e1f4af4b4075c0705c5b313548a8",
+    "microsoft/ms_marco": "a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a",
+    "openai/gsm8k": "740312add88f781978c0658806c59bc2815b9866",
+    "google-research-datasets/mbpp": "4bb6404fdc6cacfda99d4ac4205087b89d32030c"
+  },
+  "loads": [
+    {
+      "repo": "LocalLLaMA/typed-decisions",
+      "config": "all",
+      "split": "test",
+      "revision": "d0e2f0c42fef86cc15d1688d25a19f5ba7c85b18",
+      "fingerprint": "1c5e712436ed0071"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "en",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "d7af14448e5b33b1"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "de",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "c4c435baab419043"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "fr",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "a524c0ff9db50bd6"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "es",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "2972a27f4330c2de"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "pt",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "072a995cf88966ec"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "ru",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "ac8e870a019fe882"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "tr",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "1c5543c24cadeb40"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "ar",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "82ea509d4d586689"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "hi",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "4112c767f4a6cef9"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "ta",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "428451019e552ffe"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "zh-CN",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "264576c9d8cc510b"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "ja",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "d4cb6b6162c88d41"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "ko",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "1481d30c260ffab8"
+    },
+    {
+      "repo": "mteb/amazon_massive_intent",
+      "config": "sw",
+      "split": "test",
+      "revision": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+      "fingerprint": "4b864f6a9ea86c59"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "en",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "5bb3173c53f1f7ca"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "de",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "40efbbfa3a2da05b"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "fr",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "5b8ff831bbda772e"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "es",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "760b8199f67a5fb7"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "pt",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "26676d7dd3820c00"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "ru",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "df16ca8ec7ad7cc2"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "tr",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "e5be27adc7285b83"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "ar",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "9d9640ed3b603c1f"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "hi",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "4d26402f4d7d58f6"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "ta",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "84ba18f1e95357d0"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "zh-CN",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "7a1f995eeae80c23"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "ja",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "43a7a9bcd70c63dc"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "ko",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "6ec699e6c3964452"
+    },
+    {
+      "repo": "mteb/amazon_massive_scenario",
+      "config": "sw",
+      "split": "test",
+      "revision": "58871793b91addb7c5f7afff26ccf08737fb6697",
+      "fingerprint": "fbd255a04ea0e16d"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "en",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "953b716e7a70bb97"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "de",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "d98e81d711962409"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "fr",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "4e0cf3db916b86b9"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "es",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "5b1104f67d075147"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "ru",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "7296662a0d677868"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "tr",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "4aa2a4cbd9a6b1d8"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "ar",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "c9e6403287cff138"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "hi",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "0928046c9f6fbe00"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "ur",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "782c05b8474a2ebc"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "vi",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "057821819fef4ae6"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "th",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "4f2633fbcecc4ce0"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "el",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "394aef6903142eb7"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "bg",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "5efc0944d8fbbc60"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "zh",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "7014f77f0e7717c9"
+    },
+    {
+      "repo": "facebook/xnli",
+      "config": "sw",
+      "split": "test",
+      "revision": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+      "fingerprint": "bcbd1264a13dfed1"
+    },
+    {
+      "repo": "SetFit/sst5",
+      "config": null,
+      "split": "test",
+      "revision": "e51bdcd8cd3a30da231967c1a249ba59361279a3",
+      "fingerprint": "1296cdf82fff0795"
+    },
+    {
+      "repo": "dair-ai/emotion",
+      "config": "split",
+      "split": "test",
+      "revision": "cab853a1dbdf4c42c2b3ef2173804746df8825fe",
+      "fingerprint": "bd45cf0a5e0b9690"
+    },
+    {
+      "repo": "deepset/prompt-injections",
+      "config": null,
+      "split": "test",
+      "revision": "4f61ecb038e9c3fb77e21034b22511b523772cdd",
+      "fingerprint": "84d77165540a9ca9"
+    },
+    {
+      "repo": "PolyAI/banking77",
+      "config": null,
+      "split": "test",
+      "revision": "90d4e2ee5521c04fc1488f065b8b083658768c57",
+      "fingerprint": "e8530cb5cf8cdfce",
+      "loader": "original_csv",
+      "csv_url": "https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/57ec275d8078af65b7731c2a98be812d844a6d6b/banking_data/test.csv",
+      "csv_revision": "57ec275d8078af65b7731c2a98be812d844a6d6b",
+      "csv_sha256": "e10f6bc95fe4e3eb5e8060f60f09aee8b17d03f23ce0047d9511e8003c26c808",
+      "label_schema_sha256": "0e2b20c18def828886300332b15c6f647b77cdc289d1b49fffe65d8fde1d0834"
+    },
+    {
+      "repo": "fancyzhx/ag_news",
+      "config": null,
+      "split": "test",
+      "revision": "eb185aade064a813bc0b7f42de02595523103ca4",
+      "fingerprint": "0ebcc57b6aea2fc9"
+    },
+    {
+      "repo": "google/boolq",
+      "config": null,
+      "split": "validation",
+      "revision": "35b264d03638db9f4ce671b711558bf7ff0f80d5",
+      "fingerprint": "ea43cabdfaa0ccac"
+    },
+    {
+      "repo": "fancyzhx/ag_news",
+      "config": null,
+      "split": "test",
+      "revision": "eb185aade064a813bc0b7f42de02595523103ca4",
+      "fingerprint": "0ebcc57b6aea2fc9"
+    },
+    {
+      "repo": "dair-ai/emotion",
+      "config": "split",
+      "split": "test",
+      "revision": "cab853a1dbdf4c42c2b3ef2173804746df8825fe",
+      "fingerprint": "bd45cf0a5e0b9690"
+    },
+    {
+      "repo": "mteb/banking77",
+      "config": null,
+      "split": "test",
+      "revision": "18072d2685ea682290f7b8924d94c62acc19c0b2",
+      "fingerprint": "af83a4cc217cdb94"
+    },
+    {
+      "repo": "Tobi-Bueck/customer-support-tickets",
+      "config": null,
+      "split": "train",
+      "revision": "ddf1c81a5475992c4fa6752bf1e8b4e31f07bbeb",
+      "fingerprint": "2ad8469c36436bc1"
+    },
+    {
+      "repo": "SetFit/enron_spam",
+      "config": null,
+      "split": "test",
+      "revision": "1916f66c89d52221ae33eb57d44498b4f3a5df22",
+      "fingerprint": "58de05404b53cdf3"
+    },
+    {
+      "repo": "zefang-liu/phishing-email-dataset",
+      "config": null,
+      "split": "train",
+      "revision": "34085a032c123ca237f314a01a67909cdea35e34",
+      "fingerprint": "9c1d1150a423655a"
+    },
+    {
+      "repo": "lmsys/toxic-chat",
+      "config": "toxicchat0124",
+      "split": "test",
+      "revision": "29df8e4dba60e1f4af4b4075c0705c5b313548a8",
+      "fingerprint": "b5a17bfd04fcc0e5"
+    },
+    {
+      "repo": "microsoft/ms_marco",
+      "config": "v1.1",
+      "split": "validation",
+      "revision": "a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a",
+      "fingerprint": "f23ce013b931923f"
+    },
+    {
+      "repo": "openai/gsm8k",
+      "config": "main",
+      "split": "test",
+      "revision": "740312add88f781978c0658806c59bc2815b9866",
+      "fingerprint": "59ec1b7f9357c7a2"
+    },
+    {
+      "repo": "google-research-datasets/mbpp",
+      "config": "full",
+      "split": "test",
+      "revision": "4bb6404fdc6cacfda99d4ac4205087b89d32030c",
+      "fingerprint": "44206dd27b0bf01d"
+    },
+    {
+      "repo": "fancyzhx/ag_news",
+      "config": null,
+      "split": "test",
+      "revision": "eb185aade064a813bc0b7f42de02595523103ca4",
+      "fingerprint": "0ebcc57b6aea2fc9"
+    }
+  ],
+  "cases_sha256": "c604d3f4f56b2700d38cad0d8f4b531fabdef7c49209e36b67aab0e9c68656c0",
+  "cases": 20315,
+  "questions": 21915,
+  "suites": {
+    "typed_decisions": {
+      "cases": 400,
+      "meta": {
+        "note": "4 workflows, soft teacher labels",
+        "workflows": [
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "agent_trace_observability",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "customer_service",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "invoice_processing",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents",
+          "security_incidents"
+        ],
+        "soft": true
+      }
+    },
+    "massive_intent.en": {
+      "cases": 300,
+      "meta": {
+        "lang": "en",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.de": {
+      "cases": 300,
+      "meta": {
+        "lang": "de",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.fr": {
+      "cases": 300,
+      "meta": {
+        "lang": "fr",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.es": {
+      "cases": 300,
+      "meta": {
+        "lang": "es",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.pt": {
+      "cases": 300,
+      "meta": {
+        "lang": "pt",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.ru": {
+      "cases": 300,
+      "meta": {
+        "lang": "ru",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.tr": {
+      "cases": 300,
+      "meta": {
+        "lang": "tr",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.ar": {
+      "cases": 300,
+      "meta": {
+        "lang": "ar",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.hi": {
+      "cases": 300,
+      "meta": {
+        "lang": "hi",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.ta": {
+      "cases": 300,
+      "meta": {
+        "lang": "ta",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.zh-CN": {
+      "cases": 300,
+      "meta": {
+        "lang": "zh-CN",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.ja": {
+      "cases": 300,
+      "meta": {
+        "lang": "ja",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.ko": {
+      "cases": 300,
+      "meta": {
+        "lang": "ko",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_intent.sw": {
+      "cases": 300,
+      "meta": {
+        "lang": "sw",
+        "n_options": 20,
+        "label_space": 59,
+        "family": "massive_intent"
+      }
+    },
+    "massive_scenario.en": {
+      "cases": 300,
+      "meta": {
+        "lang": "en",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.de": {
+      "cases": 300,
+      "meta": {
+        "lang": "de",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.fr": {
+      "cases": 300,
+      "meta": {
+        "lang": "fr",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.es": {
+      "cases": 300,
+      "meta": {
+        "lang": "es",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.pt": {
+      "cases": 300,
+      "meta": {
+        "lang": "pt",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.ru": {
+      "cases": 300,
+      "meta": {
+        "lang": "ru",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.tr": {
+      "cases": 300,
+      "meta": {
+        "lang": "tr",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.ar": {
+      "cases": 300,
+      "meta": {
+        "lang": "ar",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.hi": {
+      "cases": 300,
+      "meta": {
+        "lang": "hi",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.ta": {
+      "cases": 300,
+      "meta": {
+        "lang": "ta",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.zh-CN": {
+      "cases": 300,
+      "meta": {
+        "lang": "zh-CN",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.ja": {
+      "cases": 300,
+      "meta": {
+        "lang": "ja",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.ko": {
+      "cases": 300,
+      "meta": {
+        "lang": "ko",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "massive_scenario.sw": {
+      "cases": 300,
+      "meta": {
+        "lang": "sw",
+        "n_options": 20,
+        "label_space": 18,
+        "family": "massive_scenario"
+      }
+    },
+    "xnli.en": {
+      "cases": 300,
+      "meta": {
+        "lang": "en",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.de": {
+      "cases": 300,
+      "meta": {
+        "lang": "de",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.fr": {
+      "cases": 300,
+      "meta": {
+        "lang": "fr",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.es": {
+      "cases": 300,
+      "meta": {
+        "lang": "es",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.ru": {
+      "cases": 300,
+      "meta": {
+        "lang": "ru",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.tr": {
+      "cases": 300,
+      "meta": {
+        "lang": "tr",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.ar": {
+      "cases": 300,
+      "meta": {
+        "lang": "ar",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.hi": {
+      "cases": 300,
+      "meta": {
+        "lang": "hi",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.ur": {
+      "cases": 300,
+      "meta": {
+        "lang": "ur",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.vi": {
+      "cases": 300,
+      "meta": {
+        "lang": "vi",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.th": {
+      "cases": 300,
+      "meta": {
+        "lang": "th",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.el": {
+      "cases": 300,
+      "meta": {
+        "lang": "el",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.bg": {
+      "cases": 300,
+      "meta": {
+        "lang": "bg",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.zh": {
+      "cases": 300,
+      "meta": {
+        "lang": "zh",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "xnli.sw": {
+      "cases": 300,
+      "meta": {
+        "lang": "sw",
+        "n_options": 3,
+        "family": "xnli"
+      }
+    },
+    "en.sst5": {
+      "cases": 600,
+      "meta": {
+        "note": "zero-shot, ordinal",
+        "family": "english",
+        "held_out": true
+      }
+    },
+    "en.emotion": {
+      "cases": 600,
+      "meta": {
+        "note": "zero-shot",
+        "family": "english",
+        "held_out": true
+      }
+    },
+    "en.prompt_injections": {
+      "cases": 116,
+      "meta": {
+        "note": "zero-shot",
+        "family": "english",
+        "held_out": true
+      }
+    },
+    "en.banking77_full": {
+      "cases": 500,
+      "meta": {
+        "note": "77 options at once",
+        "family": "english",
+        "n_options": 77,
+        "held_out": true
+      }
+    },
+    "en.ag_news": {
+      "cases": 600,
+      "meta": {
+        "note": "in-task (trained on)",
+        "family": "english",
+        "held_out": false
+      }
+    },
+    "en.boolq": {
+      "cases": 600,
+      "meta": {
+        "note": "in-task (trained on)",
+        "family": "english",
+        "held_out": false
+      }
+    },
+    "jev.ag_news": {
+      "cases": 400,
+      "meta": {
+        "note": "Jev 0.910",
+        "jev": "ag_news",
+        "in_training": true
+      }
+    },
+    "jev.emotion": {
+      "cases": 400,
+      "meta": {
+        "note": "Jev 0.480 (Brier 0.846)",
+        "jev": "emotion",
+        "in_training": false
+      }
+    },
+    "jev.banking77_full": {
+      "cases": 400,
+      "meta": {
+        "note": "77 labels at once | Jev 0.870 (72 labels)",
+        "jev": "banking77",
+        "in_training": false,
+        "n_labels": 77
+      }
+    },
+    "app.support_triage": {
+      "cases": 400,
+      "meta": {
+        "note": "10-way queue routing",
+        "in_training": true
+      }
+    },
+    "app.email_spam": {
+      "cases": 400,
+      "meta": {
+        "note": "enron spam",
+        "in_training": true
+      }
+    },
+    "app.phishing": {
+      "cases": 400,
+      "meta": {
+        "note": "phishing emails",
+        "in_training": true
+      }
+    },
+    "app.guardrails_jailbreak": {
+      "cases": 400,
+      "meta": {
+        "note": "toxic-chat jailbreaking (HELD OUT)",
+        "in_training": false
+      }
+    },
+    "app.moderation_toxicity": {
+      "cases": 400,
+      "meta": {
+        "note": "toxic-chat toxicity (HELD OUT)",
+        "in_training": false
+      }
+    },
+    "app.rag_relevance": {
+      "cases": 400,
+      "meta": {
+        "note": "MS MARCO relevance",
+        "in_training": true
+      }
+    },
+    "app.model_routing_domain": {
+      "cases": 399,
+      "meta": {
+        "note": "gsm8k/mbpp/ag_news -> domain",
+        "in_training": false
+      }
+    }
+  },
+  "sources_sha256": {
+    "bench_apps.py": "7ab2ccf99ac1afde9d50eb5feb8b86be12bb4ebdbc3bff3a58d95ccfc671f96c",
+    "build_benchmark_nb.py": "486c0ffd3e56b00b3d09a1d0d852547fcb6ed7dace395551b1b9bcf18a692991"
+  }
+}

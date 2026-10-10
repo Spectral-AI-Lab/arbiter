@@ -34,7 +34,7 @@ def _build_mlp(in_dim: int = 512, hidden_dim: int = 256, dropout_p: float = 0.1)
 
 class SetTransformerHyperFiLMHead(nn.Module):
     """
-    Architecture G: Inter-Candidate Multihead Attention + Dynamic HyperFiLM Modulation.
+    ARBITER Relational Decision Head: Inter-Candidate Multihead Attention + Dynamic HyperFiLM Modulation.
     Pipeline:
     1. Inter-Candidate Multihead Self-Attention (Block E):
        H_attn = H + alpha_attn * MHA(LN(H), LN(H), LN(H))
@@ -113,7 +113,7 @@ class ArbiterModel(PreTrainedModel):
     """
     ARBITER Decision Model:
     - Backbone: EmbeddingGemma-2 Text Encoder (512-dim native hidden states)
-    - Decision Head: Architecture G (Set-Attention + HyperFiLM)
+    - Decision Head: ARBITER (Set-Attention + HyperFiLM)
     - Full unified multi-task support: choice, noul (boolean), score (ordinal)
     """
     config_class = ArbiterConfig

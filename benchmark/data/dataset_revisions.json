@@ -1,0 +1,20 @@
+{
+  "LocalLLaMA/typed-decisions": "d0e2f0c42fef86cc15d1688d25a19f5ba7c85b18",
+  "mteb/amazon_massive_intent": "940fd47a81eaa7f2cc7b129674d945d618ac38c2",
+  "mteb/amazon_massive_scenario": "58871793b91addb7c5f7afff26ccf08737fb6697",
+  "facebook/xnli": "b8dd5d7af51114dbda02c0e3f6133f332186418e",
+  "SetFit/sst5": "e51bdcd8cd3a30da231967c1a249ba59361279a3",
+  "dair-ai/emotion": "cab853a1dbdf4c42c2b3ef2173804746df8825fe",
+  "deepset/prompt-injections": "4f61ecb038e9c3fb77e21034b22511b523772cdd",
+  "PolyAI/banking77": "90d4e2ee5521c04fc1488f065b8b083658768c57",
+  "fancyzhx/ag_news": "eb185aade064a813bc0b7f42de02595523103ca4",
+  "google/boolq": "35b264d03638db9f4ce671b711558bf7ff0f80d5",
+  "mteb/banking77": "18072d2685ea682290f7b8924d94c62acc19c0b2",
+  "Tobi-Bueck/customer-support-tickets": "ddf1c81a5475992c4fa6752bf1e8b4e31f07bbeb",
+  "SetFit/enron_spam": "1916f66c89d52221ae33eb57d44498b4f3a5df22",
+  "zefang-liu/phishing-email-dataset": "34085a032c123ca237f314a01a67909cdea35e34",
+  "lmsys/toxic-chat": "29df8e4dba60e1f4af4b4075c0705c5b313548a8",
+  "microsoft/ms_marco": "a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a",
+  "openai/gsm8k": "740312add88f781978c0658806c59bc2815b9866",
+  "google-research-datasets/mbpp": "4bb6404fdc6cacfda99d4ac4205087b89d32030c"
+}

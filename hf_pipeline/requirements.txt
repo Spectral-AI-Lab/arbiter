@@ -1,0 +1,6 @@
+numpy>=2.0
+torch>=2.6
+torchvision
+pillow
+transformers>=5.1
+sentence-transformers>=6.1.0

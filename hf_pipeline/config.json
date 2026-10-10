@@ -1,0 +1,28 @@
+{
+  "model_type": "embeddinggemma2_decision",
+  "architectures": [
+    "DecisionHFModel"
+  ],
+  "base_revision": "914f7f89142e33e77833254d9c9b90c3cef7303b",
+  "decision_config": {
+    "temperature": 0.1,
+    "center_candidates": true,
+    "normalize_prior": false,
+    "chunk_tokens": 512,
+    "chunk_overlap": 128,
+    "pooling_temperature": 0.1,
+    "head_weight": 0.35
+  },
+  "auto_map": {
+    "AutoConfig": "modeling_decision.DecisionHFConfig",
+    "AutoModel": "modeling_decision.DecisionHFModel"
+  },
+  "custom_pipelines": {
+    "decision-making": {
+      "impl": "decision_pipeline.DecisionPipeline",
+      "pt": [
+        "AutoModel"
+      ]
+    }
+  }
+}

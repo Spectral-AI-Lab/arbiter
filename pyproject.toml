@@ -18,6 +18,13 @@ dependencies = [
     "transformers>=5.19.0",
     "safetensors>=0.4.0",
 ]
+[project.optional-dependencies]
+benchmark = [
+    "scipy>=1.10.0",
+    "numpy>=1.24.0",
+    "sentence-transformers>=3.0.0",
+    "datasets>=3.0.0",
+]
 
 [tool.setuptools.packages.find]
 include = ["arbiter*"]

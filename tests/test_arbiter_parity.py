@@ -261,8 +261,8 @@ def main():
 
     report = {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "pt_checkpoint": pt_checkpoint,
-        "safetensors_dir": safetensors_dir,
+        "pt_checkpoint": str(pt_checkpoint),
+        "safetensors_dir": str(safetensors_dir),
         "device": device,
         "loaded_dtype": str(loaded_dtype),
         "total_test_cases": len(test_cases),

@@ -1,0 +1,5 @@
+-r ../hf_pipeline/requirements.txt
+laya @ git+https://github.com/NandhaKishorM/laya.git@3cf26cbcb18725dbc2d127bb8bb2c4c43243ae63
+datasets>=3.0
+gliner2[local]>=2.0.0
+protobuf>=5.0
