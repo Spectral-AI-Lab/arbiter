@@ -145,6 +145,18 @@ arbiter/
 | **Grand Benchmark (60 historical suites)** | **74.47%** | 56.86% | 47.84% | 51.25% | 21,915 decisions |
 | **Public Benchmark (23 requested suites)** | **69.68%** | 53.92% | 62.86% | 59.87% | 9,252 decisions |
 
+### Probabilistic Calibration & Uncertainty Quality (21,915 Decisions)
+
+| Model | Historical Micro Acc | Brier Score (↓ lower is better) | NLL (↓ lower is better) | ECE (15 bins) (↓ lower is better) | Calibration Profile |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **ARBITER-272M (BF16)** | **74.47%** | **0.3395** | **0.6761** | **0.0674** | **Superior calibration** (lowest probability error & minimal overconfidence) |
+| `EmbeddingGemma-2` (Base Pipeline) | 51.25% | 0.7106 | 1.5450 | 0.2947 | High entropy, uncalibrated pooled representations |
+| `Laya` (ConvAI base) | 48.30% | 0.7974 | 4.3655 | 0.3214 | Heavy overconfidence penalty (high NLL) |
+| `Laya-Multilingual` | 56.86% | 0.6788 | 2.3747 | 0.2769 | Moderate calibration |
+| `Laya-Typed-Decisions` | 52.66% | 0.6527 | 1.8325 | 0.2166 | Moderate calibration |
+| `GLiNER2.5-Decide` | 46.58% | 0.6611* | 1.5762* | 0.1098* | *Probabilities reconstructed via adapter (not native softmax) |
+| `GLiNER2.5-Multi-Decide` | 47.84% | 0.6664* | 1.5555* | 0.1379* | *Probabilities reconstructed via adapter (not native softmax) |
+
 ---
 
 ## Reproducing Empirical Benchmarks
