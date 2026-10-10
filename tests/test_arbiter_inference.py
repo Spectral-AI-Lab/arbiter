@@ -222,7 +222,7 @@ if __name__ == "__main__":
     test_predict_multi_question()
     print(" - test_predict_multi_question: PASSED")
     test_input_contract_rejections()
-    print(" - test_input_contract_rejections (including GPT defect cases): PASSED")
+    print(" - test_input_contract_rejections (including edge case contract regressions): PASSED")
     test_safe_truncation_preserves_options()
     print(" - test_safe_truncation_preserves_options: PASSED")
     test_noul_strict_true_probability()

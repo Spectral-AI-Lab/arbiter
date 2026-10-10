@@ -12,11 +12,18 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-BENCHMARKING_ROOT = Path("../benchmarking-llms")
+
+import os
+
+BENCHMARKING_ROOT = Path(os.environ.get("BENCHMARKING_ROOT", str(ROOT.parent / "benchmarking-llms")))
 if BENCHMARKING_ROOT.exists() and str(BENCHMARKING_ROOT) not in sys.path:
     sys.path.insert(1, str(BENCHMARKING_ROOT))
 
-from training.export_pipeline import DecisionPredictor
+try:
+    import pytest
+except ImportError:
+    pytest = None
+
 from arbiter import ArbiterModel
 
 
@@ -25,10 +32,27 @@ def main():
     print("STARTING ARBITER-272M PARITY VERIFICATION (BF16 .pt vs safetensors)")
     print("=" * 80)
 
+    try:
+        from training.export_pipeline import DecisionPredictor
+    except ImportError:
+        msg = "Reference DecisionPredictor module not available in standalone environment."
+        if pytest is not None:
+            pytest.skip(msg)
+        print(f"SKIPPED: {msg}")
+        return
+
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    pt_checkpoint = ROOT / "checkpoints/g2m_booster_65k/exported/g2m_grand_booster_bf16.pt"
+    pt_checkpoint = ROOT / "checkpoints/reference_booster.pt"
     if not pt_checkpoint.exists():
-        pt_checkpoint = BENCHMARKING_ROOT / "checkpoints/g2m_booster_65k/exported/g2m_grand_booster_bf16.pt"
+        fallback = BENCHMARKING_ROOT / "checkpoints/g2m_booster_65k/exported/g2m_grand_booster_bf16.pt"
+        if fallback.exists():
+            pt_checkpoint = fallback
+        else:
+            msg = f"Reference training checkpoint not found at {pt_checkpoint} or {fallback}."
+            if pytest is not None:
+                pytest.skip(msg)
+            print(f"SKIPPED: {msg}")
+            return
     safetensors_dir = ROOT / "checkpoints/arbiter-272m"
 
     print(f"Loading reference DecisionPredictor from {pt_checkpoint}...")
