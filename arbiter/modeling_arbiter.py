@@ -246,17 +246,35 @@ class ArbiterModel(PreTrainedModel):
             try:
                 tokenizer = AutoTokenizer.from_pretrained(str(model_path))
             except Exception:
-                tokenizer = AutoTokenizer.from_pretrained(config.base_model_name)
+                raise FileNotFoundError(
+                    f"Tokenizer files not found in {model_path}. Autonomous loading requires tokenizer.json in release directory."
+                )
         else:
             raise FileNotFoundError(
                 f"Tokenizer files (tokenizer.json) not found in {model_path} with local_files_only=True"
             )
 
+        # Strict validation of option marker, token ID and embedding table size
         if config.option_token not in tokenizer.get_vocab():
-            tokenizer.add_special_tokens({"additional_special_tokens": [config.option_token]})
+            raise ValueError(
+                f"Special marker '{config.option_token}' is missing from tokenizer vocabulary. Corrupted or mismatched tokenizer."
+            )
+
+        tok_opt_id = tokenizer.convert_tokens_to_ids(config.option_token)
+        if tok_opt_id != config.option_token_id:
+            raise ValueError(
+                f"Option token ID mismatch: tokenizer assigns {tok_opt_id} to '{config.option_token}', "
+                f"but config specifies {config.option_token_id}."
+            )
+
+        embed_vocab_size = model.language_model.embed_tokens.weight.shape[0]
+        if embed_vocab_size < len(tokenizer):
+            raise ValueError(
+                f"Embedding table size ({embed_vocab_size}) is smaller than tokenizer vocabulary ({len(tokenizer)})."
+            )
 
         model.tokenizer = tokenizer
-        model.option_token_id = tokenizer.convert_tokens_to_ids(config.option_token)
+        model.option_token_id = tok_opt_id
 
         # Move to target device
         target_device = device or ("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -315,6 +333,7 @@ class ArbiterModel(PreTrainedModel):
         criteria: dict[str, str] | list[str] | None,
         question_type: str = "choice",
         max_length: int = 4096,
+        allow_truncation: bool = False,
     ) -> dict[str, Any]:
         """
         High-level single-query decision interface.
@@ -331,14 +350,44 @@ class ArbiterModel(PreTrainedModel):
         if not instruction.strip():
             raise ValueError("Instruction cannot be empty.")
 
+        if max_length > self.config.max_position_embeddings:
+            raise ValueError(
+                f"Requested max_length ({max_length}) exceeds model max_position_embeddings "
+                f"({self.config.max_position_embeddings})."
+            )
+
         if question_type not in ("choice", "noul", "score"):
             raise ValueError(f"Invalid question_type '{question_type}'. Must be 'choice', 'noul', or 'score'.")
 
+        # Canonicalize and validate criteria per question type
         if question_type == "noul":
             if criteria is None or (isinstance(criteria, (dict, list)) and len(criteria) == 0):
                 criteria = {"false": "The statement is false.", "true": "The statement is true."}
-            elif len(criteria) != 2:
-                raise ValueError(f"For question_type='noul', criteria must contain exactly 2 options (got {len(criteria)}).")
+            elif isinstance(criteria, dict):
+                clean_dict = {str(k).lower().strip(): str(v) for k, v in criteria.items()}
+                if set(clean_dict.keys()) != {"false", "true"}:
+                    raise ValueError(
+                        f"For question_type='noul', criteria dictionary keys must be canonical ('false' and 'true'). "
+                        f"Got: {list(criteria.keys())}. Arbitrary keys are rejected to prevent semantic inversion."
+                    )
+                # Enforce canonical ordering: false, then true
+                criteria = {"false": clean_dict["false"], "true": clean_dict["true"]}
+            elif isinstance(criteria, (list, tuple)):
+                if len(criteria) != 2:
+                    raise ValueError(f"For question_type='noul', criteria must contain exactly 2 options (got {len(criteria)}).")
+                c0 = str(criteria[0]).lower().strip()
+                c1 = str(criteria[1]).lower().strip()
+                if {c0, c1} == {"false", "true"}:
+                    desc_f = str(criteria[0]) if c0 == "false" else str(criteria[1])
+                    desc_t = str(criteria[1]) if c1 == "true" else str(criteria[0])
+                    criteria = {"false": desc_f, "true": desc_t}
+                else:
+                    raise ValueError(
+                        f"For question_type='noul', criteria list items must be canonical ('false', 'true'). "
+                        f"Got: {list(criteria)}."
+                    )
+            else:
+                raise TypeError(f"Invalid type for criteria: {type(criteria)}. Expected dict, list, or None.")
         elif question_type in ("choice", "score"):
             if criteria is None or len(criteria) < 2:
                 raise ValueError(f"For question_type='{question_type}', criteria must contain at least 2 options.")
@@ -346,29 +395,59 @@ class ArbiterModel(PreTrainedModel):
         if isinstance(criteria, dict):
             options = [(str(k), str(v)) for k, v in criteria.items()]
             keys = [str(k) for k in criteria.keys()]
-        else:
+        elif isinstance(criteria, (list, tuple)):
             options = [(str(i), str(desc)) for i, desc in enumerate(criteria)]
             keys = [str(i) for i in range(len(criteria))]
+        else:
+            raise TypeError(f"Invalid type for criteria: {type(criteria)}. Expected dict or list.")
+
+        # Validate key uniqueness after string conversion
+        if len(set(keys)) != len(keys):
+            raise ValueError(f"Criteria contains duplicate keys after string normalization: {keys}")
 
         # Guard: sanitize raw context/instruction to prevent collision with the internal <OPTION> marker
         safe_context = re.sub(r"<OPTION>", "[OPTION]", str(context).strip())
         safe_instruction = re.sub(r"<OPTION>", "[OPTION]", str(instruction).strip())
 
-        header = f"Contexte : {safe_context}\nInstruction : {safe_instruction}\n\n"
         opt_lines = [
             f"{self.option_token} {label}: {re.sub(r'<OPTION>', '[OPTION]', str(desc).strip())}" if desc else f"{self.option_token} {label}"
             for label, desc in options
         ]
-        prompt = header + "\n".join(opt_lines)
+        options_text = "\n".join(opt_lines)
+        header = f"Contexte : {safe_context}\nInstruction : {safe_instruction}\n\n"
+        prompt = header + options_text
+
+        # Length and Truncation Contract Check
+        raw_token_count = len(self.tokenizer.encode(prompt, add_special_tokens=True))
+        is_truncated = False
+
+        if raw_token_count > max_length:
+            if not allow_truncation:
+                raise ValueError(
+                    f"Input sequence length ({raw_token_count} tokens) exceeds max_length ({max_length}). "
+                    "By default, ARBITER rejects truncated inputs to prevent silent loss of candidate descriptions. "
+                    "Set allow_truncation=True to safely truncate context without clipping candidate options."
+                )
+            # Safe truncation: ONLY truncate context; never cut instruction or candidate options
+            overhead_tokens = len(self.tokenizer.encode(f"Contexte : \nInstruction : {safe_instruction}\n\n{options_text}", add_special_tokens=True))
+            if overhead_tokens >= max_length:
+                raise ValueError(
+                    f"Instruction and candidate options alone require {overhead_tokens} tokens, exceeding max_length ({max_length}). "
+                    "Cannot safely fit candidate options within budget."
+                )
+            avail_ctx_tokens = max_length - overhead_tokens
+            ctx_ids = self.tokenizer.encode(safe_context, add_special_tokens=False)[:avail_ctx_tokens]
+            truncated_context = self.tokenizer.decode(ctx_ids, skip_special_tokens=True)
+            header = f"Contexte : {truncated_context}\nInstruction : {safe_instruction}\n\n"
+            prompt = header + options_text
+            is_truncated = True
 
         device = next(self.parameters()).device
-        # Tokenize with max_length truncation (contract: 4096 tokens max)
         encoded = self.tokenizer(
             prompt,
             return_tensors="pt",
             add_special_tokens=True,
-            truncation=True,
-            max_length=max_length,
+            truncation=False,
         ).to(device)
 
         input_ids = encoded["input_ids"]
@@ -378,7 +457,7 @@ class ArbiterModel(PreTrainedModel):
         if len(opt_pos) != len(options):
             raise ValueError(
                 f"Option count mismatch: found {len(opt_pos)} option tokens vs {len(options)} options requested. "
-                f"This can happen if prompt length exceeded max_length ({max_length}) and was truncated."
+                "Candidate options were damaged or desynchronized."
             )
 
         with torch.no_grad():
@@ -398,12 +477,14 @@ class ArbiterModel(PreTrainedModel):
             "selected_key": best_key,
             "probabilities": prob_dict,
             "confidence": probs[best_idx],
+            "input_tokens": raw_token_count,
+            "truncated": is_truncated,
         }
 
         if question_type == "score":
             res["score"] = sum(i * p for i, p in enumerate(probs))
         elif question_type == "noul":
-            res["noul"] = prob_dict.get("true", probs[-1])
+            res["noul"] = prob_dict["true"]
 
         return res
 

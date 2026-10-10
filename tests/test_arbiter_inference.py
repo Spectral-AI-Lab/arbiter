@@ -123,9 +123,55 @@ def test_input_contract_rejections():
     with raises(ValueError, match="criteria must contain at least 2 options"):
         model.decide("ctx", "inst", [], question_type="choice")
 
-    # 3. Empty context
-    with raises(ValueError, match="Context cannot be empty"):
-        model.decide("  ", "inst", ["A", "B"], question_type="choice")
+    # 4. Inverted / non-canonical keys in noul
+    with raises(ValueError, match="keys must be canonical"):
+        model.decide("ctx", "inst", {"yes": "true", "no": "false"}, question_type="noul")
+
+    # 5. Overlength input rejection when allow_truncation=False
+    with raises(ValueError, match="exceeds max_length"):
+        model.decide(
+            context="Short context",
+            instruction="Which option is valid?",
+            criteria={"A": "A" * 100, "B": "B" * 100},
+            max_length=32,
+            allow_truncation=False,
+        )
+
+    # 6. max_length exceeding max_position_embeddings (4096)
+    with raises(ValueError, match="exceeds model max_position_embeddings"):
+        model.decide("ctx", "inst", ["A", "B"], max_length=5000)
+
+
+def test_safe_truncation_preserves_options():
+    """Test that when allow_truncation=True, context is truncated but options remain 100% intact."""
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    model = ArbiterModel.from_pretrained(CHECKPOINT_DIR, device=device, local_files_only=True)
+
+    res = model.decide(
+        context="Very long context with important details: " + ("word " * 500),
+        instruction="Select correct category",
+        criteria={"A": "Category Alpha", "B": "Category Beta"},
+        max_length=64,
+        allow_truncation=True,
+    )
+    assert res["selected_key"] in ["A", "B"]
+    assert res["truncated"] is True
+    assert "input_tokens" in res
+
+
+def test_noul_strict_true_probability():
+    """Test that noul returns the exact probability of 'true' and never an ambiguous positional fallback."""
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    model = ArbiterModel.from_pretrained(CHECKPOINT_DIR, device=device, local_files_only=True)
+
+    res = model.decide(
+        context="The earth orbits the sun.",
+        instruction="Is the statement true?",
+        criteria={"false": "False statement", "true": "True statement"},
+        question_type="noul",
+    )
+    assert res["noul"] == res["probabilities"]["true"]
+    assert 0.0 <= res["noul"] <= 1.0
 
 
 def test_adversarial_option_token_sanitization():
@@ -155,7 +201,11 @@ if __name__ == "__main__":
     test_predict_multi_question()
     print(" - test_predict_multi_question: PASSED")
     test_input_contract_rejections()
-    print(" - test_input_contract_rejections: PASSED")
+    print(" - test_input_contract_rejections (including GPT defect cases): PASSED")
+    test_safe_truncation_preserves_options()
+    print(" - test_safe_truncation_preserves_options: PASSED")
+    test_noul_strict_true_probability()
+    print(" - test_noul_strict_true_probability: PASSED")
     test_adversarial_option_token_sanitization()
     print(" - test_adversarial_option_token_sanitization: PASSED")
     print("\nALL ARBITER INTEGRATION TESTS PASSED SUCCESSFULLY!")
