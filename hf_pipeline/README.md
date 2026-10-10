@@ -6,15 +6,15 @@ tags:
 - custom-code
 - decision-making
 ---
-# EmbeddingGemma 2 — pipeline décisionnelle
+# EmbeddingGemma 2 — Decision Pipeline
 
-Pipeline Hugging Face locale utilisant les poids Google d’origine, sans quantification. CPU et `dtype="auto"` par défaut. La révision du checkpoint est fixée dans `config.json`. Aucun dépôt n’a été publié.
+Local Hugging Face pipeline utilizing official Google base weights, without quantization. Uses CPU and `dtype="auto"` by default. The checkpoint revision is anchored in `config.json`. No external hub repo published.
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-Depuis ce dossier :
+From this directory:
 
 ```python
 from transformers import pipeline
@@ -24,39 +24,37 @@ pipe = pipeline(
     trust_remote_code=True, device="cpu", dtype="auto",
 )
 result = pipe({
-    "state": "Mon paiement a été débité deux fois. Je souhaite un remboursement.",
+    "state": "My payment was debited twice. I would like a refund.",
     "questions": {
         "service": {
-            "type": "choice", "instructions": "Quel service ?",
-            "criteria": {"facturation": "Paiements et factures", "livraison": "Colis et livraison"},
+            "type": "choice", "instructions": "Which department?",
+            "criteria": {"billing": "Payments and invoices", "shipping": "Parcels and delivery"},
         },
-        "urgence": {
-            "type": "score", "instructions": "Quel degré d’urgence ?",
-            "criteria": ["Faible", "Modéré", "Élevé"],
+        "urgency": {
+            "type": "score", "instructions": "What urgency level?",
+            "criteria": ["Low", "Medium", "High"],
         },
-        "remboursement": {
-            "type": "noul", "instructions": "Le client demande un remboursement.",
+        "refund": {
+            "type": "noul", "instructions": "The customer is requesting a refund.",
         },
     },
 })
 print(result)
 ```
 
-Depuis un autre dossier, remplacer `model="."` par le chemin absolu de ce projet. Les poids sont téléchargés depuis `google/embeddinggemma-2` ou lus dans le cache HF ; ce dépôt contient uniquement du code et la configuration. Installer les dépendances avant le chargement. L’accès au checkpoint et ses conditions Google restent applicables.
+From another directory, replace `model="."` with the absolute path to this project. Weights are downloaded from `google/embeddinggemma-2` or read from the local HF cache; this directory contains only code and configuration. Install dependencies before loading. Checkpoint access and Google terms remain applicable.
 
-## Fichiers
+## Files
 
-- `config.json` : révision Google, paramètres décisionnels et déclaration de la pipeline personnalisée.
-- `modeling_decision.py` : chargement du modèle et intégration `AutoModel`.
-- `decision_pipeline.py` : interface `transformers.pipeline`.
-- `engine.py` : embeddings, centrage, similarités et agrégation.
-- `compat.py` : requêtes et réponses au format commun Jev/Laya.
-- `requirements.txt` : dépendances.
+- `config.json`: Google revision, decision settings, and custom pipeline declaration.
+- `modeling_decision.py`: Model loader and `AutoModel` integration.
+- `decision_pipeline.py`: `transformers.pipeline` interface.
+- `engine.py`: Embeddings, mean centering, cosine similarities, and LogSumExp window aggregation.
+- `compat.py`: Request and response parsing matching the common Jev/Laya contract.
+- `requirements.txt`: Dependencies.
 
-## Portée
+## Scope & Capabilities
 
-`decision-making` est une tâche personnalisée, pas une tâche native de Transformers. Une requête dictionnaire par appel. Les types `choice`, `score`, `noul` sont pris en charge, sans serveur HTTP ni extensions de routage Laya.
+`decision-making` is a custom task, not a native Transformers task. Processes one request dictionary per call. Supports `choice`, `score`, and `noul` question types without HTTP server overhead or Laya router extensions.
 
-Traitements inspirés de MediaPipe : préfixes de classification, centrage des candidats, normalisation L2, similarités cosinus et agrégation LogSumExp de fenêtres de texte. Ce n’est pas une reproduction exacte de son moteur natif. Aucun entraînement décisionnel ajouté ; probabilités non calibrées. La confiance suit la formule Jev, différente de celle de Laya. `usage.input_tokens` compte les entrées logiques, descriptions en cache comprises.
-
-Le chargement réel sur CPU avec `auto` (BF16 pour la révision fixée), les trois types et leur égalité avec le moteur ont été vérifiés. Cela ne constitue pas un benchmark de qualité. Le téléchargement depuis un dépôt publié et l’installation dans un environnement vierge restent à vérifier.
+Preprocessing inspired by MediaPipe: classification prefixes, candidate mean-centering, L2 normalization, cosine similarity, and LogSumExp window aggregation. This is not an exact replica of the native MediaPipe runtime. No fine-tuning applied; probabilities are uncalibrated. Confidence follows the Jev formula, distinct from Laya's. `usage.input_tokens` counts logical inputs, including cached candidate descriptions.

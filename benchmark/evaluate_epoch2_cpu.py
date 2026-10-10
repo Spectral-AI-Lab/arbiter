@@ -32,22 +32,22 @@ try:
         return sum(r['accuracy_including_failures'] * r['expected_answers'] for r in rows) / n
     scores = {name: accuracy(pred) for name, pred in groups.items()}
     baseline = json.loads(Path('results/comparison_all_v2.json').read_text())['models']
-    mapping = ['Typed decisions', 'MASSIVE intent', 'XNLI', 'Classification anglaise', 'Applications']
-    lines = ['# Évaluation exploratoire CPU — EG2 époque 2', '',
-             'Checkpoint figé à l’époque 2, pas 6188. CPU FP32, 4 threads, CUDA masqué.',
-             'Même dataset complet que les références ; latences CPU non comparables aux anciennes latences GPU.',
-             'Ce test demandé à titre exploratoire ne sert pas à sélectionner le checkpoint.', '',
-             '| Modèle | ' + ' | '.join(groups) + ' |',
+    mapping = ['Typed decisions', 'MASSIVE intent', 'XNLI', 'English classification', 'Applications']
+    lines = ['# Exploratory CPU Evaluation — EG2 Epoch 2', '',
+             'Checkpoint frozen at epoch 2, step 6188. CPU FP32, 4 threads, CUDA masked.',
+             'Identical complete dataset as references; CPU latencies not directly comparable to GPU measurements.',
+             'Exploratory test requested for diagnostics; not used for final checkpoint selection.', '',
+             '| Model | ' + ' | '.join(groups) + ' |',
              '|---|' + '---:|' * len(groups)]
     for name, model in baseline.items():
         cells = [f"{model[g]['accuracy_including_failures'] * 100:.2f} %" for g in mapping]
         lines.append('| ' + name + ' | ' + ' | '.join(cells) + ' |')
-    lines.append('| **EG2 multi-tâches époque 2** | ' + ' | '.join(f'**{s*100:.2f} %**' for s in scores.values()) + ' |')
+    lines.append('| **EG2 Multi-Task Epoch 2** | ' + ' | '.join(f'**{s*100:.2f} %**' for s in scores.values()) + ' |')
     failures = sum(r['failed_requests'] for r in report.values())
-    lines += ['', f'Requêtes échouées : {failures}. Elles comptent comme incorrectes dans le tableau.',
-              'MASSIVE scenario est également disponible dans summary.json.',
-              'Le prédicteur utilise les prompts non tronqués de training/eval_test.py ; les budgets diffèrent des modèles externes.',
-              'Sources : results/epoch2_cpu_full/trained-eg2/{metadata,summary}.json et predictions.jsonl.', '']
+    lines += ['', f'Failed requests: {failures}. Counted as incorrect in the summary table.',
+              'MASSIVE scenario is also available in summary.json.',
+              'Predictor uses untruncated prompts matching training/eval_test.py; context budgets differ across external models.',
+              'Sources: results/epoch2_cpu_full/trained-eg2/{metadata,summary}.json and predictions.jsonl.', '']
     text = '\n'.join(lines)
     (output / 'comparison.md').write_text(text)
     Path('docs/epoch2_cpu_benchmark.md').write_text(text)

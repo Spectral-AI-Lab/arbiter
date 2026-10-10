@@ -43,16 +43,16 @@ def main():
     assert loaded_dtype == torch.bfloat16, f"Expected torch.bfloat16, got {loaded_dtype}"
 
     test_cases = [
-        # 1. French banking choice
+        # 1. Banking customer support choice
         {
-            "name": "French Banking Routing",
-            "context": "J'ai un prélèvement suspect de 45 euros sur mon relevé bancaire ce matin.",
-            "instruction": "Quel département doit traiter cette demande ?",
+            "name": "Banking Customer Support Routing",
+            "context": "I noticed an unauthorized charge of 45 dollars on my bank statement this morning.",
+            "instruction": "Which department should handle this request?",
             "criteria": {
-                "fraude": "Signalement d'opérations non autorisées et cartes bloquées",
-                "virement": "Ordres de virement et virements permanents",
-                "credit": "Demandes d'emprunt et taux d'intérêt",
-                "compte": "Gestion générale du compte et plafonds",
+                "fraud": "Reporting unauthorized transactions and locked cards",
+                "transfer": "Wire transfers and standing orders",
+                "credit": "Loan applications and interest rates",
+                "account": "General account settings and limits",
             },
             "type": "choice",
         },

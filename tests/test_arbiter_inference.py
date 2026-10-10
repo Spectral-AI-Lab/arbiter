@@ -41,19 +41,19 @@ def test_decide_choice():
     model = ArbiterModel.from_pretrained(CHECKPOINT_DIR, device=device, local_files_only=True)
 
     result = model.decide(
-        context="J'ai un prélèvement suspect de 45 euros sur mon relevé bancaire ce matin.",
-        instruction="Quel département doit traiter cette demande ?",
+        context="I noticed an unauthorized debit of 45 dollars on my bank statement this morning.",
+        instruction="Which department must handle this request?",
         criteria={
-            "fraude": "Signalement d'opérations non autorisées et cartes bloquées",
-            "virement": "Ordres de virement et virements permanents",
-            "credit": "Demandes d'emprunt et taux d'intérêt",
-            "compte": "Gestion générale du compte et plafonds",
+            "fraud": "Reporting unauthorized transactions and locked cards",
+            "transfer": "Wire transfers and standing orders",
+            "credit": "Loan applications and interest rates",
+            "account": "General account management and spending limits",
         },
         question_type="choice",
     )
 
     assert "selected_key" in result
-    assert result["selected_key"] in ["fraude", "virement", "credit", "compte"]
+    assert result["selected_key"] in ["fraud", "transfer", "credit", "account"]
     assert "probabilities" in result
     assert len(result["probabilities"]) == 4
     assert 0.0 <= result["confidence"] <= 1.0

@@ -43,22 +43,22 @@ def main(paths, output):
         'MASSIVE intent': lambda s: s.startswith('massive_intent.'),
         'MASSIVE scenario': lambda s: s.startswith('massive_scenario.'),
         'XNLI': lambda s: s.startswith('xnli.'),
-        'Classification anglaise': lambda s: s.startswith('en.'),
+        'English classification': lambda s: s.startswith('en.'),
         'Applications': lambda s: s.startswith(('app.', 'jev.')),
     }
-    lines = ['# Comparaison agrégée par domaine', '',
-             'Les valeurs sont des moyennes pondérées par le nombre de réponses.', '']
+    lines = ['# Aggregated Domain Comparison', '',
+             'Values are weighted averages based on expected response counts.', '']
     metric_specs = [
         ('Accuracy (%)', 'accuracy_including_failures', 100, '.1f'),
-        ('Latence p50 (ms)', 'latency_p50_ms', 1, '.1f'),
-        ('Latence p95 (ms)', 'latency_p95_ms', 1, '.1f'),
+        ('Latency p50 (ms)', 'latency_p50_ms', 1, '.1f'),
+        ('Latency p95 (ms)', 'latency_p95_ms', 1, '.1f'),
         ('ECE', 'ece_15', 1, '.3f'),
         ('Brier', 'brier', 1, '.3f'),
         ('NLL', 'nll', 1, '.3f'),
     ]
     aggregate = {}
     for title, key, scale, fmt in metric_specs:
-        lines += [f'## {title}', '', '| Domaine | ' + ' | '.join(display_models) + ' |',
+        lines += [f'## {title}', '', '| Domain | ' + ' | '.join(display_models) + ' |',
                   '|' + '---|' * (len(models) + 1)]
         for group, predicate in groups.items():
             cells = []
@@ -69,8 +69,8 @@ def main(paths, output):
                 aggregate.setdefault(model, {}).setdefault(group, {})[key] = value
             lines.append('| ' + group + ' | ' + ' | '.join(cells) + ' |')
         lines.append('')
-    lines += ['## Résumé global', '',
-              '| Modèle | Réponses | Accuracy (%) | ECE | Latence p50 (ms) | Latence p95 (ms) |',
+    lines += ['## Overall Summary', '',
+              '| Model | Answers | Accuracy (%) | ECE | Latency p50 (ms) | Latency p95 (ms) |',
               '|---|---:|---:|---:|---:|---:|']
     for model, (meta, report) in sorted(runs.items()):
         rows = list(report.values())

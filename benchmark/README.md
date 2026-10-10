@@ -1,24 +1,24 @@
 # ARBITER Benchmark Suite
 
-Ce module fournit le harnais d'évaluation et les jeux de données figés permettant de reproduire l'intégralité des benchmarks empiriques pour **ARBITER-272M**, **EmbeddingGemma-2 base** (`hf_pipeline/`), **Laya** (ConvAI) et **GLiNER**.
+This module provides the standalone evaluation harness and frozen datasets required to reproduce empirical benchmarks for **ARBITER-272M**, **EmbeddingGemma-2 base** (`hf_pipeline/`), **Laya** (ConvAI), and **GLiNER**.
 
-## Reproduction Immédiate
+## Quick Reproduction
 
-### 1. Suites Publiques (23 suites, 9 252 décisions : SST-2, TREC, Banking77, Fast Decisions)
+### 1. Public Suites (23 suites, 9,252 decisions: SST-2, TREC, Banking77, Fast Decisions)
 
 ```bash
-# Évaluation d'ARBITER-272M sur GPU :
+# Evaluate ARBITER-272M on GPU:
 python benchmark/run.py --model arbiter-272m \
   --data benchmark/data/public_requested_v1/cases.jsonl \
   --device cuda:0 --threads 16 --output results/public_benchmark
 
-# Évaluation d'EmbeddingGemma-2 base pipeline sur GPU :
+# Evaluate EmbeddingGemma-2 base pipeline on GPU:
 python benchmark/run.py --model embeddinggemma2 \
   --data benchmark/data/public_requested_v1/cases.jsonl \
   --device cuda:0 --threads 16 --output results/public_benchmark
 ```
 
-### 2. Suites Historiques (60 suites, 21 915 décisions : MASSIVE, Typed Decisions, etc.)
+### 2. Historical Suites (60 suites, 21,915 decisions: MASSIVE, Typed Decisions, etc.)
 
 ```bash
 python benchmark/run.py --model arbiter-272m \
@@ -26,57 +26,54 @@ python benchmark/run.py --model arbiter-272m \
   --device cuda:0 --threads 16 --output results/historical_benchmark
 ```
 
-## Ce qui est repris de Laya
+## Baseline Integration & Upstream Origin
 
-Les deux scripts officiels sont conservés sans modification dans `upstream/`, depuis le commit `3cf26cbcb18725dbc2d127bb8bb2c4c43243ae63`. La préparation exécute seulement leurs blocs de construction des données, pas leur chargement de modèles ni leurs cellules GPU. Elle échoue si une suite manque ; aucune substitution de dataset ou de prompt n'est faite. Pour `PolyAI/banking77`, le script de chargement obsolète est remplacé par la lecture directe du CSV original PolyAI, au commit `57ec275d8078af65b7731c2a98be812d844a6d6b`. L'ordre des lignes et le `ClassLabel` du script HF sont conservés, sans exécuter ce script ; les empreintes des sources sont enregistrées.
+The original reference scripts are preserved intact in `upstream/`, anchored at commit `3cf26cbcb18725dbc2d127bb8bb2c4c43243ae63`. Benchmark preparation executes only their dataset-building routines, without their model loading or GPU execution cells. The pipeline strictly fails if any suite is missing; no prompt or dataset substitution is permitted. For `PolyAI/banking77`, the deprecated legacy script is replaced with direct reading of the official PolyAI CSV at commit `57ec275d8078af65b7731c2a98be812d844a6d6b`. Row ordering and `ClassLabel` mappings from the Hugging Face script are preserved; cryptographic source hashes are recorded.
 
-| Groupe | Suites et échantillonnage officiels |
+| Group | Official Suites & Sampling |
 |---|---|
-| `typed` | LocalLLaMA/typed-decisions, test complet (annoncé à 400 cas, 2 000 décisions) |
-| `multilingual` | MASSIVE intent et scenario, 14 langues dont français ; XNLI, 15 langues dont français ; 300 premiers cas par suite |
-| `english` | SST-5 (600), Emotion (600), prompt-injections (test complet), Banking77 (500), AG News (600), BoolQ (600) |
-| `apps` | 10 suites : AG News, Emotion, Banking77, support, spam, phishing, jailbreak, toxicité, pertinence RAG, routage de domaine ; N=400 selon les filtres officiels |
+| `typed` | LocalLLaMA/typed-decisions, full test split (400 cases, 2,000 decisions) |
+| `multilingual` | MASSIVE intent and scenario, 14 languages including French; XNLI, 15 languages; first 300 cases per suite |
+| `english` | SST-5 (600), Emotion (600), prompt-injections (full test), Banking77 (500), AG News (600), BoolQ (600) |
+| `apps` | 10 suites: AG News, Emotion, Banking77, support, spam, phishing, jailbreak, toxicity, RAG relevance, domain routing; N=400 per official filters |
 
-MASSIVE utilise 20 candidats : le vrai label + 19 distracteurs (seed 13). Cela ne mesure pas une classification parmi toutes les intentions. Les suites applicatives comprennent aussi des splits `train` et des tâches connues de Laya : leurs chiffres ne représentent pas tous une généralisation hors entraînement. Les sous-ensembles en tête de dataset ne sont pas nécessairement représentatifs. Les groupes anglais/applicatifs se recoupent : ne pas les additionner en un unique score global.
+MASSIVE uses 20 candidate options: the ground truth label + 19 distractors (seed 13). This evaluates candidate selection rather than classification across the full intent inventory. The application suites also include training splits and tasks known to Laya: their scores do not all represent out-of-distribution generalization. Head subsets are not necessarily representative across entire distributions. English and application groups overlap: they must not be summed into an unweighted global score.
 
-## Comparaison
+## Comparison Protocol
 
-- Entrées et questions identiques, construites une fois en JSONL puis vérifiées par SHA256.
-- Quatre exécutions séparées : notre pipeline HF, Laya English, Laya Multilingual, Laya Typed Decisions. Pas de sélection a posteriori du meilleur checkpoint par exemple.
-- Checkpoints Laya fixés aux révisions recommandées par `laya/revisions.py` du dépôt consulté. Code Laya fixé au commit ci-dessus. Révision Google dans `hf_pipeline/config.json`.
-- Device commun CPU ou CUDA (`--device cpu`, `cuda`, `cuda:0`), 8 threads CPU par défaut, lot de 1, trois requêtes de chauffe. EG2 conserve `dtype="auto"`, Laya sa politique de précision native sur le device choisi. La précision réelle est enregistrée : les latences ne constituent donc pas une ablation à précision identique.
-- Aucun réglage de température sur le test. Laya garde ses températures livrées, EG2 ses paramètres actuels.
-- Prédictions, erreurs, troncatures éventuelles signalées par Laya, versions, paramètres et temps sauvegardés. Pas de remplacement silencieux d’un modèle en erreur.
+- Identical inputs and questions across all models, constructed once into JSONL format and verified via SHA-256.
+- Distinct separate runs: ARBITER package, HF base pipeline, Laya English, Laya Multilingual, Laya Typed Decisions, GLiNER2.5-Decide, and GLiNER2.5-Multi-Decide. No retrospective checkpoint selection.
+- Laya checkpoints locked to the official revisions recommended by `laya/revisions.py`. Laya upstream code locked to the commit above. Google revision locked in `hf_pipeline/config.json`.
+- Unified target device: CPU or CUDA (`--device cpu`, `cuda`, `cuda:0`), default 8 CPU threads, batch size 1, 3 warm-up requests. ARBITER runs in native BF16 (`dtype="auto"`), Laya applies its native precision policy on the selected device. Actual precision is recorded.
+- No test-set temperature tuning: models retain their delivered default inference temperatures.
+- All predictions, errors, truncations, versions, parameters, and execution times are persisted. No silent replacement of failed model invocations.
 
-## Mesures et limites
+## Metrics & Statistical Rigor
 
-Accuracy argmax, ECE 15 bins, Brier **multiclasse**, NLL, MAE des scores, accord avec les cibles souples pour typed-decisions. La calibration utilise `max(probabilités)` pour tous, jamais `confidence` (formules différentes entre Jev et Laya). Les petites erreurs de somme dues à l’arrondi sont renormalisées.
+- Primary metric: Argmax Accuracy (`accuracy_including_failures`), ECE (15 bins), multiclass Brier score, NLL, score MAE, soft-target agreement for typed-decisions.
+- Calibration uses `max(probabilities)` for all models, never the raw `confidence` field (due to disparate formulas between architectures). Minor floating-point rounding discrepancies are renormalized.
+- Failures remain in the denominator of `accuracy_including_failures`; secondary metrics are computed on valid responses with reported coverage.
+- Paired request-cluster bootstrap: all questions tied to a single state remain clustered together (2,000 resamples, seed 13). Confidence intervals are exploratory without multiple-testing adjustment.
+- Latencies (p50 / p95) measure the entire end-to-end call, including tokenization and post-processing, after warm-up. Peak RSS includes Python imports, weight loading, and inference.
+- Known constraints: context budgets are model-specific; Banking77 (77 options) may exceed Laya's option capacity, and these failures are preserved in the reported metrics.
 
-Les échecs figurent dans le dénominateur de `accuracy_including_failures` ; les autres métriques sont calculées sur les réponses valides et accompagnées de leur couverture. Le bootstrap est apparié par requête (toutes ses questions restent ensemble), 2 000 tirages, seed 13. Les IC sont exploratoires, sans correction des comparaisons multiples.
-
-p50/p95 mesurent l'appel complet, tokenisation et post-traitement compris, après chauffe ; le cache de descriptions EG2 reste actif. Pic RSS du processus séparé : inclut imports, chargement et inférence ; ce n'est pas la seule taille des poids. Les chiffres GPU historiques de Laya ne servent pas de baseline de latence. Les budgets de contexte restent propres aux architectures, et Banking77 peut excéder le budget d'options Laya : ces échecs sont conservés.
-
-Différences explicites avec les scripts originaux : inférence via les API publiques, CPU ou GPU en lot de 1 plutôt que lots GPU/forward pass seuls ; échecs comptés plutôt qu'exclus ; couverture à seuil respectant les égalités. Les jeux de données et prompts sont ceux des scripts, les temps ne reproduisent pas les tableaux historiques. Le protocole ne relance pas encore les expériences dédiées de permutation d'options, de contexte long ni de recalibration.
-
-Laya Typed Decisions est entraîné sur le train de typed-decisions : sa comparaison avec EG2 est une comparaison de systèmes, pas deux modèles évalués sans entraînement spécifique sur cette tâche.
-
-## Vérification locale
+## Local Test Verification
 
 ```bash
-.venv/bin/python -m unittest discover -s benchmark/tests -v
+python -m unittest discover -s benchmark/tests -v
 ```
 
-Ces tests vérifient les métriques et le couplage des résultats, pas la qualité des modèles. Les exécutions réelles nécessitent les dépendances, datasets et poids.
+These unit tests verify metric calculations and pipeline coupling. Full benchmark runs require dependencies, datasets, and model checkpoints.
 
-Sources : [scripts et protocoles officiels](https://github.com/NandhaKishorM/laya/tree/3cf26cbcb18725dbc2d127bb8bb2c4c43243ae63/research), [limites publiées](https://github.com/NandhaKishorM/laya/blob/3cf26cbcb18725dbc2d127bb8bb2c4c43243ae63/docs/benchmarks.md). Code amont Apache-2.0 ; licence jointe dans `upstream/LICENSE`.
+Upstream sources: [official scripts & protocols](https://github.com/NandhaKishorM/laya/tree/3cf26cbcb18725dbc2d127bb8bb2c4c43243ae63/research), [published limits](https://github.com/NandhaKishorM/laya/blob/3cf26cbcb18725dbc2d127bb8bb2c4c43243ae63/docs/benchmarks.md). Upstream code Apache-2.0; license included in `upstream/LICENSE`.
 
-## GPU depuis le notebook ou le terminal
+## GPU Execution from Notebook or CLI
 
-Dans `notebook/benchmark_laya.ipynb`, choisir `DEVICE = "cuda:0"` (GPU) ou `DEVICE = "cpu"`. Le notebook distingue automatiquement les dossiers CPU/GPU.
+In `notebook/benchmark_laya.ipynb`, configure `DEVICE = "cuda:0"` (GPU) or `DEVICE = "cpu"`.
 
 ```bash
-.venv/bin/python benchmark/run.py --model all --device cuda:0 --threads 8 --output results/laya_comparison_cuda_0
-.venv/bin/python benchmark/compare.py results/laya_comparison_cuda_0
+python benchmark/run.py --model all --device cuda:0 --threads 8 --output results/laya_comparison_cuda_0
+python benchmark/compare.py results/laya_comparison_cuda_0
 ```
 
-Chaque modèle est chargé dans un processus séparé sur le device demandé. Aucun repli silencieux vers CPU n'est accepté. Les temps CUDA sont synchronisés avant/après chaque appel réussi. Les métadonnées incluent le GPU, la version CUDA et les pics de mémoire PyTorch allouée/réservée (chargement et chauffe inclus), distincts de la RAM RSS. La mémoire d'autres processus GPU n'est pas comprise. La précision EG2 reste `auto` ; la précision effective de Laya est enregistrée pour les poids et dépend de sa politique d'inférence. Les rapports CPU et GPU ne sont pas mélangés.
+Each model runs in a separate process on the requested device without silent CPU fallback. CUDA timings are synchronized before and after each successful call. Metadata records GPU device, CUDA version, and PyTorch peak allocated/reserved memory stats.

@@ -53,19 +53,19 @@ def compare(root):
                 estimates.append(draw[:,0].sum()/draw[:,1].sum())
             paired[model][suite] = {'eg2_minus_laya_accuracy': float(d[:,0].sum()/d[:,1].sum()),
                                     'paired_bootstrap_95ci': np.quantile(estimates,[.025,.975]).tolist()}
-    title = 'PILOT — sous-échantillon' if ref['pilot'] else 'Échantillonnages officiels Laya'
-    rows = [f'# {title}', '', f"{ref['device']} ; lot de 1 ; précision effective enregistrée par modèle. Échecs comptés comme incorrects.", '',
-            '| Suite | Modèle | N réponses | Accuracy (échecs inclus) | Couverture | ECE¹ | p50 ms/requête |',
+    title = 'PILOT — subsample' if ref['pilot'] else 'Official Laya Benchmark Samplings'
+    rows = [f'# {title}', '', f"{ref['device']} ; batch size 1 ; effective precision recorded per model. Failures counted as incorrect.", '',
+            '| Suite | Model | N Answers | Accuracy (failures included) | Coverage | ECE¹ | p50 ms/request |',
             '|---|---|---:|---:|---:|---:|---:|']
     for model, suites in reports.items():
         for suite, m in suites.items():
             ece = f"{m['ece_15']:.3f}" if 'ece_15' in m else '—'
             latency = f"{m['latency_p50_ms']:.1f}" if m['latency_p50_ms'] is not None else '—'
             rows.append(f"| {suite} | {model} | {m['expected_answers']} | {m['accuracy_including_failures']:.3f} | {m['coverage']:.3f} | {ece} | {latency} |")
-    rows += ['', '¹ ECE sur réponses valides et max(probabilités), pas le champ confidence. Comparer avec la couverture.',
-             'Les différences et IC bootstrap appariés (par requête) sont dans comparison.json. Ils sont exploratoires, sans correction pour comparaisons multiples.',
-             'Laya typed-decisions a été entraîné sur le train de typed-decisions ; EmbeddingGemma 2 ne l’a pas été par ce projet. Les deux conditions ne sont pas équivalentes.',
-             'Latences des pipelines complets sur le matériel enregistré : ne pas les assimiler aux mesures historiques de Laya.']
+    rows += ['', '¹ ECE on valid responses and max(probabilities), not the confidence field. Compare with coverage.',
+             'Differences and paired bootstrap 95% CIs (per request) are in comparison.json. They are exploratory, without multiple comparisons correction.',
+             'Laya typed-decisions was trained on the typed-decisions train split; EmbeddingGemma 2 was not. The two conditions are not equivalent.',
+             'End-to-end pipeline latencies on recorded hardware: do not conflate with historical Laya reports.']
     (root/'comparison.md').write_text('\n'.join(rows)+'\n')
     (root/'comparison.json').write_text(json.dumps({'models': metadata, 'paired': paired}, indent=2)+'\n')
     print(root/'comparison.md')
