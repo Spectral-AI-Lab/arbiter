@@ -63,3 +63,11 @@ def test_norm_path_heldout_resolution():
     outside = Path('/tmp/outside_file.jsonl')
     assert norm_path(outside) == '/tmp/outside_file.jsonl'
 
+
+
+def test_verified_wrapper_rejects_recipe_quota_change(tmp_path):
+    from scripts.prepare_adaptation import verify
+    (tmp_path/'manifest.json').write_text(json.dumps({'recipe':'typed-boost-80k-v1','counts':{}}))
+    import pytest
+    with pytest.raises(ValueError, match='quotas'):
+        verify(tmp_path, 'mixture_80k', 13)

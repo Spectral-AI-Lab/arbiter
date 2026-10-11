@@ -7,7 +7,7 @@ module is used by both.
 ## What is built
 
 Exactly **80,000 training decisions** and **8,000 validation decisions**, using pinned
-public training splits. Files are generated locally under `results/adaptation/80k/`,
+public training splits. Files are generated locally under `results/adaptation/80k_typed/`,
 which is ignored by Git. No paid API or LLM labeling is required.
 
 | Group | Train | Validation | Source |
@@ -17,7 +17,7 @@ which is ignored by Git. No paid API or LLM labeling is required.
 | Policy decisions | 24,000 | 2,400 | Procedural policy applicability, policy uncertainty and taxonomy routing |
 | Historical replay | 0 (removed) | 0 | Benchmark replay (Banking77/MASSIVE) removed to eliminate bias toward historical suites |
 
-Train type totals: **52,000 choice**, **21,600 noul**, **9,600 score**.
+Train type totals: **48,800 choice**, **21,600 noul**, **9,600 score**.
 Policy contributes 12k choice and 12k noul; Typed workflows contribute 12.8k choice, 9.6k noul, 9.6k score.
 These are policy and workflow structured questions, not newly annotated Fast Decisions corpus.
 
@@ -31,8 +31,6 @@ and removes the historical replay tasks.
 | [LocalLLaMA/typed-decisions](https://huggingface.co/datasets/LocalLLaMA/typed-decisions) | `d0e2f0c42fef86cc15d1688d25a19f5ba7c85b18` |
 | [tasksource/procedural-typed-decisions](https://huggingface.co/datasets/tasksource/procedural-typed-decisions) | `609513a3faddf729123266efe9861456fe748f95` |
 | [facebook/xnli](https://huggingface.co/datasets/facebook/xnli) | `b8dd5d7af51114dbda02c0e3f6133f332186418e` |
-| [mteb/amazon_massive_intent](https://huggingface.co/datasets/mteb/amazon_massive_intent) | `940fd47a81eaa7f2cc7b129674d945d618ac38c2` |
-| [mteb/banking77](https://huggingface.co/datasets/mteb/banking77) | `18072d2685ea682290f7b8924d94c62acc19c0b2` |
 
 License fields are source metadata, not blanket clearance for redistribution. In
 particular, the pinned XNLI source does not declare a license in its card; the builder
@@ -47,9 +45,6 @@ not replaced with model predictions.
 3. Keep all 15 NLI translations of a selected premise together. Training has 1,600
    decisions per language; validation has 160. Relations are nearly equally represented.
    Selection shuffles the first sufficient shard(s), not the complete NLI corpus.
-4. Cycle Banking77 labels and MASSIVE language/label slots for broad coverage without
-   replacement. MASSIVE covers 14 languages; Bulgarian is unavailable and Chinese uses
-   the source's `zh-CN` file. Label counts are not promised to be perfectly equal.
 5. Reject contexts matching supplied held-out benchmark cases, cross-split context
    overlaps and duplicate requests. Do not modify the benchmark files.
 6. Check each selected request with the real inference formatter and tokenizer. Reject
@@ -60,7 +55,7 @@ not replaced with model predictions.
 The manifest records sources, file hashes, group counts, type/family counts and rejection
 counts. A repeated build reuses outputs only when hashes and configuration match.
 If an incomplete output directory remains after interruption, use a fresh destination.
-Changing the token budget or builder code also requires a new build destination.
+Use scripts/prepare_adaptation.py for verified reuse, including recipe quotas and output hashes.
 
 ## What the checks do not prove
 

@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 errors = []
 files = [ROOT / 'README.md', ROOT / 'CONTRIBUTING.md',
          ROOT / 'finetuning/README.md', ROOT / 'benchmark/README.md',
-         *ROOT.joinpath('docs').glob('*.md')]
+         *ROOT.joinpath('docs').glob('*.md'), *ROOT.joinpath('finetuning').glob('*.md')]
 for path in files:
     for target in re.findall(r'\]\(([^)]+)\)', path.read_text()):
         if '://' in target or target.startswith('#'):
