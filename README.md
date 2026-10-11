@@ -328,3 +328,7 @@ Expected output:
 ### Native batching
 
 `decide_batch()` and `predict_batch()` support length-based batching with token and attention budgets. `predict()` batches its questions automatically. See [batching, examples and deployment limits](docs/batching.md).
+
+## Targeted fine-tuning
+
+See the [data and training plan](docs/targeted_finetuning.md) and the [guided notebook](notebooks/targeted_finetuning.ipynb) for adapting Typed, NLI and policy decisions while tracking routing retention. The opt-in `finetuning/` tools provide audited JSONL input, supervised training, TensorBoard and resumable checkpoints. The proposed 80k corpus is not bundled; no improvement is claimed before evaluation.
