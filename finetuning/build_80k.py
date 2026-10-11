@@ -36,6 +36,15 @@ VAL_QUOTAS = {'typed/choice':640, 'typed/noul':480, 'typed/score':480,
               'replay/banking':800, 'replay/massive':800}
 
 
+def norm_path(path):
+    repo_root = Path(__file__).resolve().parents[1]
+    p = Path(path)
+    try:
+        return p.resolve().relative_to(repo_root).as_posix()
+    except ValueError:
+        return p.resolve().as_posix()
+
+
 def digest(path):
     with Path(path).open('rb') as f:
         return hashlib.file_digest(f, 'sha256').hexdigest()
@@ -148,18 +157,24 @@ def main():
                           option_token_id=config['option_token_id'],
                           config=SimpleNamespace(max_position_embeddings=config.get('max_position_embeddings',4096)))
     if a.max_length<=0 or a.max_length>proxy.config.max_position_embeddings:p.error('Invalid max length')
-    identity={'seed':a.seed,'max_length':a.max_length,'sources':SOURCES,
-              'heldout_sha256':{str(x):digest(x) for x in a.heldout},
-              'builder_sha256':{x.name:digest(x) for x in Path(__file__).parent.glob('*.py')},
-              'tokenizer_sha256':{x.name:digest(x) for x in a.model.iterdir() if x.is_file() and
-                                    ('token' in x.name or x.name=='config.json')}}
+    recipe_identity = {'seed': a.seed, 'max_length': a.max_length, 'sources': SOURCES,
+                       'heldout_sha256': {norm_path(x): digest(x) for x in a.heldout},
+                       'tokenizer_sha256': {x.name: digest(x) for x in a.model.iterdir() if x.is_file() and
+                                            ('token' in x.name or x.name == 'config.json')}}
+    identity = dict(recipe_identity,
+                    builder_sha256={x.name: digest(x) for x in Path(__file__).parent.glob('*.py')})
     # JSON roundtrip makes tuple/list representations stable for reuse.
-    identity=json.loads(json.dumps(identity))
-    manifest_path=a.output/'manifest.json'
+    identity = json.loads(json.dumps(identity))
+    recipe_identity = json.loads(json.dumps(recipe_identity))
+    manifest_path = a.output / 'manifest.json'
     if manifest_path.exists():
-        old=json.loads(manifest_path.read_text())
-        if old['identity']==identity and all(digest(a.output/name)==sha for name,sha in old['output_sha256'].items()):
-            print('Existing verified 80k dataset reused.',flush=True);return
+        old = json.loads(manifest_path.read_text())
+        old_id = old.get('identity', {})
+        old_recipe = {k: old_id.get(k) for k in ('seed', 'max_length', 'sources', 'tokenizer_sha256')}
+        old_recipe['heldout_sha256'] = {norm_path(k): v for k, v in old_id.get('heldout_sha256', {}).items()}
+        if old_recipe == recipe_identity and all(digest(a.output / name) == sha for name, sha in old.get('output_sha256', {}).items()):
+            print('Existing verified 80k dataset reused.', flush=True)
+            return
         p.error('Existing dataset/config/hash mismatch; choose a new output directory')
     if a.output.exists():p.error('Incomplete output directory exists; choose a new output directory')
     rng=random.Random(a.seed)

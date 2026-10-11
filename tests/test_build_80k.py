@@ -50,3 +50,16 @@ def test_whole_translation_group_not_partially_selected(tmp_path):
          patch('finetuning.build_80k.ArbiterModel._prepare_decision',return_value={}):
         sel.add([row('a','English'),row('a','French')],['k','k'],whole=True)
     assert not sel.rows['train']
+
+
+def test_norm_path_heldout_resolution():
+    from pathlib import Path
+    from finetuning.build_80k import norm_path
+    repo_root = Path(__file__).resolve().parents[1]
+    rel = Path('benchmark/data/cases.jsonl')
+    abs_p = (repo_root / rel).resolve()
+    assert norm_path(rel) == 'benchmark/data/cases.jsonl'
+    assert norm_path(abs_p) == 'benchmark/data/cases.jsonl'
+    outside = Path('/tmp/outside_file.jsonl')
+    assert norm_path(outside) == '/tmp/outside_file.jsonl'
+
