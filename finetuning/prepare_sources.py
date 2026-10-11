@@ -55,10 +55,13 @@ def main():
     p.add_argument('--revision', required=True, help='Full upstream commit SHA')
     p.add_argument('--output', required=True, type=Path)
     p.add_argument('--seed', type=int, default=13)
+    p.add_argument('--license', help='Verified source license identifier (required for XNLI)')
     p.add_argument('--groups', type=int, default=2000, help='XNLI underlying premise/hypothesis groups, not translated decisions')
     a = p.parse_args()
     if len(a.revision) != 40 or any(c not in '0123456789abcdef' for c in a.revision) or a.groups <= 0:
         p.error('Require full revision SHA and positive group budget')
+    if a.source == 'xnli' and not a.license:
+        p.error('Supply --license after checking terms for the pinned XNLI/MultiNLI source')
     if a.output.exists():
         p.error('Output already exists')
     a.output.mkdir(parents=True)
@@ -88,7 +91,7 @@ def main():
                 label = names[row['label']]
                 for lang in LANGUAGES:
                     write(dict(id=f'xnli:{group}:{lang}', group_id=f'xnli:{group}', family=f'nli/{lang}',
-                               source='facebook/xnli', source_revision=a.revision, source_split='train', license='cc-by-nc-4.0',
+                               source='facebook/xnli', source_revision=a.revision, source_split='train', license=a.license,
                                context=row['premise'][lang], instruction='Classify the relationship to this hypothesis: '+hypotheses[lang],
                                criteria=criteria, question_type='choice', target={k: float(k==label) for k in criteria}))
     finally:

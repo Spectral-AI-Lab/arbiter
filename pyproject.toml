@@ -19,6 +19,12 @@ dependencies = [
     "safetensors>=0.4.0",
 ]
 [project.optional-dependencies]
+finetuning = [
+    "datasets>=3.0.0",
+    "tensorboard>=2.15.0",
+    "nbformat>=5.9.0",
+    "jupyterlab>=4.0.0",
+]
 benchmark = [
     "scipy>=1.10.0",
     "numpy>=1.24.0",

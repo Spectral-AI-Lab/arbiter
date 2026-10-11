@@ -11,7 +11,6 @@ import json
 import math
 from pathlib import Path
 import random
-import shutil
 import sys
 
 import torch
@@ -67,7 +66,10 @@ def evaluate(model, rows, batch_size, device):
     result = {f: {'n': t[0], 'ce': t[1]/t[0], 'accuracy': t[2]/t[0],
                   'ordinal_mae': t[3]/t[4] if t[4] else None} for f, t in totals.items()}
     model.train()
-    return {'families': result, 'macro_ce': sum(v['ce'] for v in result.values())/len(result)}
+    groups = defaultdict(list)
+    for family, values in result.items():
+        groups[family.split('/')[0]].append(values['ce'])
+    return {'families': result, 'macro_ce': sum(sum(v)/len(v) for v in groups.values())/len(groups)}
 
 
 def atomic_checkpoint(path, payload):
