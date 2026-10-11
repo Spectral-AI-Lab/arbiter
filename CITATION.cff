@@ -1,10 +1,10 @@
 cff-version: 1.2.0
 message: "If you use this software or model, please cite it as below."
 authors:
-  - family-names: "Attoui"
-    given-names: "Seif"
   - family-names: "Mokhtari"
     given-names: "Ichrak"
+  - family-names: "Attoui"
+    given-names: "Seif"
 title: "ARBITER: Attentive Relational Bidirectional Impartial Typed Encoder for Reasoning"
 version: 1.0.0
 date-released: 2026-10-12

@@ -68,7 +68,7 @@ def get_config(name: str, root_dir: Optional[Path] = None) -> AdaptationConfig:
         data_dir = root / "results/adaptation/typed"
         return AdaptationConfig(
             name="typed",
-            description="Spécialiste Typed Decisions mono-tâche (atteint 76.45% sur le benchmark officiel)",
+            description="Typed Decisions specialist (observed benchmark accuracy: 76.45%)",
             run_name="arbiter-targeted-typed-v1",
             data_dir=data_dir,
             train_path=data_dir / "train.jsonl",
@@ -87,7 +87,7 @@ def get_config(name: str, root_dir: Optional[Path] = None) -> AdaptationConfig:
         data_dir = root / "results/adaptation/80k_typed"
         return AdaptationConfig(
             name="mixture_80k",
-            description="Mélange 80,000 décisions enrichi en typé (32k typé, 24k politique, 24k NLI) sans replay historique",
+            description="Experimental 80,000-decision mixture: 32k typed, 24k policy, 24k NLI, without replay",
             run_name="arbiter-targeted-80k-v2",
             data_dir=data_dir,
             train_path=data_dir / "train.jsonl",
