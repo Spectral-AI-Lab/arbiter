@@ -1,0 +1,6 @@
+# Recorded specialist environment; not a universal compatibility guarantee.
+# Install the matching CUDA PyTorch wheel from its appropriate index separately.
+transformers==5.19.0
+safetensors==0.8.0
+tensorboard==2.21.0
+# Original torch: 2.14.1+cu130; Python: 3.12.3.

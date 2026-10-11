@@ -49,3 +49,39 @@ results/
 # Git commit template
 .gitmessage
 
+
+/releases/
+
+# Local credentials and environment settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local training data, telemetry and caches
+/data/
+/logs/
+/runs/
+/cache/
+.cache/
+events.out.tfevents.*
+*.log
+.ipynb_checkpoints/
+
+# Additional training / export artifacts
+*.ckpt
+*.pth
+*.onnx
+
+# Complete inference packages are downloaded from Hugging Face
+/checkpoints/
+
+# Internal reviews, planning and publication drafts (kept locally)
+/docs/repository_quality_review.md
+/docs/publication_audit.md
+/docs/publish_typed_specialist.md
+/docs/targeted_finetuning.md
+/docs/finetuning_validation.md
+/docs/HF_SPACE_README.md
+/docs/HUGGINGFACE_ORG_PAGE.md
