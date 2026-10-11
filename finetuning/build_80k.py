@@ -23,17 +23,13 @@ SOURCES = {
     'typed': ('LocalLLaMA/typed-decisions', 'd0e2f0c42fef86cc15d1688d25a19f5ba7c85b18', 'apache-2.0'),
     'procedural': ('tasksource/procedural-typed-decisions', '609513a3faddf729123266efe9861456fe748f95', 'apache-2.0'),
     'nli': ('facebook/xnli', 'b8dd5d7af51114dbda02c0e3f6133f332186418e', 'unspecified-see-upstream-terms'),
-    'massive': ('mteb/amazon_massive_intent', '940fd47a81eaa7f2cc7b129674d945d618ac38c2', 'apache-2.0'),
-    'banking': ('mteb/banking77', '18072d2685ea682290f7b8924d94c62acc19c0b2', 'mit'),
 }
-TRAIN_QUOTAS = {'typed/choice':6400, 'typed/noul':4800, 'typed/score':4800,
-                'policy/choice':12000, 'policy/noul':12000,
-                'nli/entailment':8010, 'nli/neutral':7995, 'nli/contradiction':7995,
-                'replay/banking':8000, 'replay/massive':8000}
-VAL_QUOTAS = {'typed/choice':640, 'typed/noul':480, 'typed/score':480,
-              'policy/choice':1200, 'policy/noul':1200,
-              'nli/entailment':810, 'nli/neutral':795, 'nli/contradiction':795,
-              'replay/banking':800, 'replay/massive':800}
+TRAIN_QUOTAS = {'typed/choice': 12800, 'typed/noul': 9600, 'typed/score': 9600,
+                'policy/choice': 12000, 'policy/noul': 12000,
+                'nli/entailment': 8010, 'nli/neutral': 7995, 'nli/contradiction': 7995}
+VAL_QUOTAS = {'typed/choice': 1280, 'typed/noul': 960, 'typed/score': 960,
+              'policy/choice': 1200, 'policy/noul': 1200,
+              'nli/entailment': 810, 'nli/neutral': 795, 'nli/contradiction': 795}
 
 
 def norm_path(path):
@@ -243,42 +239,44 @@ def main():
         if selector.complete(nli_keys):break
     progress('NLI selected')
 
-    # Banking: cycle through labels for broad coverage without inventing repeated data.
-    bank=parquet('banking','data/train-00000-of-00001.parquet')
-    labels=sorted({r['label_text'] for r in bank})
-    options={k:k.replace('_',' ') for k in labels}
-    by_label=defaultdict(list)
-    for r in bank:by_label[r['label_text']].append(r)
-    while any(by_label.values()) and not selector.complete(['replay/banking']):
-        for label in labels:
-            if not by_label[label]:continue
-            r=by_label[label].pop();group=context_hash(r['text'])
-            row=record('banking',group,group,'replay/banking',r['text'],
-                       'Select the banking intent that best describes the request.', 'choice',options,
-                       {k:float(k==label) for k in labels})
-            selector.add([row],['replay/banking'])
-    progress('Banking replay selected')
+    # Optional Banking replay (skipped if absent from sources/quotas)
+    if 'banking' in SOURCES and any(k in selector.quotas['train'] for k in ['replay/banking']):
+        bank=parquet('banking','data/train-00000-of-00001.parquet')
+        labels=sorted({r['label_text'] for r in bank})
+        options={k:k.replace('_',' ') for k in labels}
+        by_label=defaultdict(list)
+        for r in bank:by_label[r['label_text']].append(r)
+        while any(by_label.values()) and not selector.complete(['replay/banking']):
+            for label in labels:
+                if not by_label[label]:continue
+                r=by_label[label].pop();group=context_hash(r['text'])
+                row=record('banking',group,group,'replay/banking',r['text'],
+                           'Select the banking intent that best describes the request.', 'choice',options,
+                           {k:float(k==label) for k in labels})
+                selector.add([row],['replay/banking'])
+        progress('Banking replay selected')
 
-    # MASSIVE: aligned IDs share a split across languages. Cycle languages and labels.
-    mass=defaultdict(list)
-    for lang in [lang for lang in LANGUAGES if lang != 'bg']:
-        source_lang = 'zh-CN' if lang == 'zh' else lang
-        with gzip.open(fetch('massive',f'train/{source_lang}.json.gz'),'rt') as f:
-            rows=[json.loads(line) for line in f if line.strip()]
-        rng.shuffle(rows)
-        for row in rows:mass[(lang,row['label_text'])].append(row)
-    labels=sorted({label for lang,label in mass})
-    options={label:label.replace('_',' ') for label in labels}
-    slots=sorted(mass)
-    while any(mass.values()) and not selector.complete(['replay/massive']):
-        for slot in slots:
-            if not mass[slot]:continue
-            r=mass[slot].pop();lang,label=slot
-            row=record('massive',f'{r["id"]}:{lang}',str(r['id']),f'replay/massive/{lang}',r['text'],
-                       'Select the intent expressed by the user.', 'choice',options,
-                       {k:float(k==label) for k in labels},language=lang)
-            selector.add([row],['replay/massive'])
-    progress('MASSIVE replay selected')
+    # Optional MASSIVE replay (skipped if absent from sources/quotas)
+    if 'massive' in SOURCES and any(k in selector.quotas['train'] for k in ['replay/massive']):
+        mass=defaultdict(list)
+        for lang in [lang for lang in LANGUAGES if lang != 'bg']:
+            source_lang = 'zh-CN' if lang == 'zh' else lang
+            with gzip.open(fetch('massive',f'train/{source_lang}.json.gz'),'rt') as f:
+                rows=[json.loads(line) for line in f if line.strip()]
+            rng.shuffle(rows)
+            for row in rows:mass[(lang,row['label_text'])].append(row)
+        labels=sorted({label for lang,label in mass})
+        options={label:label.replace('_',' ') for label in labels}
+        slots=sorted(mass)
+        while any(mass.values()) and not selector.complete(['replay/massive']):
+            for slot in slots:
+                if not mass[slot]:continue
+                r=mass[slot].pop();lang,label=slot
+                row=record('massive',f'{r["id"]}:{lang}',str(r['id']),f'replay/massive/{lang}',r['text'],
+                           'Select the intent expressed by the user.', 'choice',options,
+                           {k:float(k==label) for k in labels},language=lang)
+                selector.add([row],['replay/massive'])
+        progress('MASSIVE replay selected')
     deficits={s:{k:q-selector.counts[s][k] for k,q in quotas.items() if selector.counts[s][k]!=q}
               for s,quotas in selector.quotas.items()}
     if any(deficits.values()):
@@ -290,16 +288,16 @@ def main():
         rng.shuffle(rows)
         (a.output/f'{split}.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in rows))
         read_rows(a.output/f'{split}.jsonl')
-    manifest={'recipe':'public-80k-v1','identity':identity,'source_files_sha256':source_files,
+    manifest={'recipe':'typed-boost-80k-v1','identity':identity,'source_files_sha256':source_files,
               'counts':{s:dict(c) for s,c in selector.counts.items()},'rejected':dict(selector.rejected),
               'groups':{s:len({r['group_id'] for r in rows}) for s,rows in selector.rows.items()},
               'source_counts':{s:dict(Counter(r['source'] for r in rows)) for s,rows in selector.rows.items()},
               'type_counts':{s:dict(Counter(r['question_type'] for r in rows)) for s,rows in selector.rows.items()},
               'audit':report,'output_sha256':{f'{s}.jsonl':digest(a.output/f'{s}.jsonl') for s in selector.rows},
-              'limitations':['Published procedural data, not new human annotations.',
+              'limitations':['Published procedural and official typed data, not new human annotations.',
                              'Exact audit only; previous base exposure and semantic overlap are not ruled out.',
                              'XNLI train translations have variable quality; source license metadata is unspecified.',
-                             'Replay focuses on Banking77/MASSIVE; retention of other domains must be evaluated.',
+                             'Historical benchmark replay (Banking77/MASSIVE) removed in favor of typed decisions.',
                              'NLI uses the first sufficient shuffled shard(s), not a full-corpus uniform sample.',
                              'Grouping by source IDs does not ensure unseen templates or rules.']}
     manifest_path.write_text(json.dumps(manifest,indent=2)+'\n')
