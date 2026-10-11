@@ -12,6 +12,10 @@ import math
 from pathlib import Path
 import random
 import sys
+import time
+import platform
+import os
+from importlib.metadata import version
 
 import torch
 from safetensors.torch import save_file
@@ -110,11 +114,19 @@ def main():
     p.add_argument('--ordinal-lambda', type=float, default=.5)
     p.add_argument('--eval-every', type=int, default=250)
     p.add_argument('--seed', type=int, default=13)
+    p.add_argument('--log-every', type=int, default=25)
+    p.add_argument('--deterministic', action='store_true', help='Require deterministic PyTorch kernels for same-environment resume comparisons')
+    p.add_argument('--stop-after-step', type=int, help='Save and stop at this optimizer step; resume with the same recipe')
     p.add_argument('--threads', type=int, default=4)
     p.add_argument('--resume', action='store_true', help='Resume this output/latest.pt (trusted local checkpoint only)')
     p.add_argument('--validate-only', action='store_true', help='Audit and tokenize, no forward/backward')
     a = p.parse_args()
-    if any(v <= 0 for v in [a.epochs, a.batch_size, a.accumulation, a.max_length, a.eval_every, a.threads,
+    if a.deterministic:
+        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+        torch.use_deterministic_algorithms(True)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+    if any(v <= 0 for v in [a.epochs, a.batch_size, a.accumulation, a.max_length, a.eval_every, a.log_every, a.threads,
                             a.backbone_lr, a.head_lr, a.clip]) or a.ordinal_lambda < 0:
         p.error('Budgets/LRs/clip must be positive; ordinal-lambda nonnegative')
     if not a.model.is_dir() or a.output.resolve() == a.model.resolve() or a.model.resolve() in a.output.resolve().parents:
@@ -125,13 +137,29 @@ def main():
     report = audit(train, val, a.heldout)
     if set(r['family'] for r in train) != set(r['family'] for r in val):
         p.error('Train and validation must cover identical families')
-    config = {k: str(v) if isinstance(v, Path) else v for k,v in vars(a).items() if k not in ('resume', 'validate_only', 'heldout')}
+    config = {k: str(v) if isinstance(v, Path) else v for k,v in vars(a).items() if k not in ('resume', 'validate_only', 'heldout', 'stop_after_step')}
     report['config'] = config
     report['inputs'] = {str(x): hashlib.sha256(x.read_bytes()).hexdigest() for x in [a.train, a.validation]}
     report['base_files'] = {x.name: hashlib.sha256(x.read_bytes()).hexdigest() for x in a.model.iterdir() if x.is_file()}
     report['code'] = {str(x.relative_to(Path(__file__).parents[1])): hashlib.sha256(x.read_bytes()).hexdigest()
                       for folder in (Path(__file__).parent, Path(__file__).parents[1]/'arbiter') for x in folder.glob('*.py')}
-    report['versions'] = {'torch': torch.__version__, 'python': sys.version}
+    report['versions'] = {'torch': torch.__version__, 'python': sys.version,
+                          **{name: version(name) for name in ('transformers','safetensors','tensorboard')}}
+    device = torch.device('cpu' if a.validate_only else a.device)
+    if device.type == 'cuda':
+        if not torch.cuda.is_available():
+            p.error('CUDA is unavailable; use --device cpu or a compatible PyTorch installation')
+        torch.cuda.set_device(device.index if device.index is not None else torch.cuda.current_device())
+        if not torch.cuda.is_bf16_supported():
+            p.error('This trainer requires native BF16 CUDA support; use a compatible GPU or CPU')
+        device = torch.device('cuda', torch.cuda.current_device())
+        torch.cuda.reset_peak_memory_stats(device)
+    elif device.type != 'cpu':
+        p.error('Supported devices: cpu, cuda, cuda:N')
+    report['hardware'] = {'platform': platform.platform(), 'device': str(device),
+                          'cuda_runtime': torch.version.cuda,
+                          'gpu': torch.cuda.get_device_name(device) if device.type == 'cuda' else None}
+    started = time.perf_counter()
     a.output.mkdir(parents=True, exist_ok=True)
     manifest = a.output/'manifest.json'
     if a.resume and (not manifest.exists() or json.loads(manifest.read_text()) != report):
@@ -140,7 +168,6 @@ def main():
     torch.set_num_threads(a.threads)
     random.seed(a.seed)
     torch.manual_seed(a.seed)
-    device = torch.device('cpu' if a.validate_only else a.device)
     model = ArbiterModel.from_pretrained(a.model, device=device, dtype=torch.float32)
     train, val = prepare(model, train, a.max_length), prepare(model, val, a.max_length)
     if a.validate_only:
@@ -206,20 +233,32 @@ def main():
                 scheduler.step()
                 optimizer.zero_grad(set_to_none=True)
                 step += 1
-                if step % 25 == 0:
+                if step % a.log_every == 0:
                     vals = torch.stack((ce_sum/len(rows), ord_sum/max(1,n_score), norm)).cpu().tolist()
                     for key, value in zip(('Loss/CE','Loss/Ordinal_MAE','Gradient/pre_clip_norm'), vals):
                         writer.add_scalar(key, value, step)
                     writer.add_scalar('Gradient/clip_scale', min(1., a.clip/(vals[2]+1e-6)), step)
                     writer.add_scalar('LR/backbone', optimizer.param_groups[0]['lr'], step)
-                if step % a.eval_every == 0 or offset+window_size >= len(order):
+                stop_requested = a.stop_after_step is not None and step >= a.stop_after_step
+                if step % a.eval_every == 0 or offset+window_size >= len(order) or stop_requested:
                     validate()
                     atomic_checkpoint(a.output/'latest.pt', dict(model=model.state_dict(), optimizer=optimizer.state_dict(),
                         scheduler=scheduler.state_dict(), epoch=epoch, next_window=offset+window_size, step=step, best=best,
                         rng=torch.get_rng_state(), cuda_rng=torch.cuda.get_rng_state_all() if device.type=='cuda' else []))
                     writer.flush()
+                    print(f'Step {step}/{total_steps}: validation and checkpoint saved.', flush=True)
+                    if stop_requested:
+                        print('Stopped at requested optimizer boundary. Use --resume to continue.', flush=True)
+                        return
     finally:
         writer.close()
+        if device.type == 'cuda':
+            torch.cuda.synchronize(device)
+        telemetry = {'step': step, 'elapsed_seconds': time.perf_counter()-started,
+                     'peak_allocated_bytes': torch.cuda.max_memory_allocated(device) if device.type=='cuda' else None,
+                     'peak_reserved_bytes': torch.cuda.max_memory_reserved(device) if device.type=='cuda' else None}
+        with (a.output/'runtime.jsonl').open('a') as f:
+            f.write(json.dumps(telemetry)+'\n')
     print(f'Finished {step} optimizer steps. Selected package: {a.output / "best"}')
 
 
