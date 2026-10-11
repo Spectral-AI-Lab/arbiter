@@ -126,36 +126,140 @@ arbiter/
 └── README.md                        # Documentation
 ```
 
-## Empirical Benchmark Results
+## Benchmark Results
 
-> **ARBITER-272M is an ultra-compact 272M parameter decision model that consistently outperforms evaluated open-weights baselines (Laya variants and GLiNER) across core routing and intent classification benchmarks.**
+ARBITER achieves the highest micro accuracy on both evaluated protocol aggregates,
+with particularly strong intent routing and probability quality. Tables use a fixed
+set of model variants throughout; **bold marks the best reported result in each row**
+(including ties). Accuracy is in percent; ↓ means lower is better. These are local
+protocol comparisons, not a claim of leadership on every task.
 
-| Benchmark | ARBITER-272M (BF16) | Laya (ConvAI) | GLiNER2.5-Decide | EmbeddingGemma-2 (Base) | Scope & Task Description |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **TREC (Coarse)** | **94.60%** | 88.20% | 32.60% | 47.40% | Question classification (6 coarse classes, 500 test questions) |
-| **MASSIVE Intent** | **91.33%** | 33.95% | 42.29% | 73.79% | Multilingual intent routing (14 languages, 4,200 test decisions) |
-| **Banking77** | **87.34%** | 37.44% | 65.29% | 85.55% | Fine-grained customer support intent (77 real classes, 3,080 test cases) |
-| **MASSIVE Scenario** | **89.40%** | 30.10% | 36.98% | 58.07% | Multilingual scenario routing (14 languages, 4,200 decisions) |
-| **SST-2 (GLUE)** | **86.93%** | **90.02%** | 87.96% | 83.26% | Sentiment classification (validation split, 872 sentences) |
+### Intent Routing & Classification
 
-### Summary Protocol Aggregates
+| Benchmark / metric | ARBITER | Laya | Laya Multilingual | Laya Typed | GLiNER Decide | GLiNER Multi | EmbeddingGemma |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| MASSIVE Intent · 14 languages | **91.33%** | 33.95% | 46.69% | 34.43% | 42.29% | 49.52% | 73.79% |
+| MASSIVE Scenario · 14 languages | **89.40%** | 30.10% | 44.74% | 28.43% | 36.98% | 45.26% | 58.07% |
+| Banking77 · 77 intents | **87.34%** | 37.44% | 35.94% | 37.31% | 65.29% | 58.90% | 85.55% |
+| TREC · question classification | **94.60%** | 88.20% | 90.40% | 85.40% | 32.60% | 36.20% | 47.40% |
+| SST-2 · sentiment | 86.93% | **90.02%** | 84.98% | 89.79% | 87.96% | 78.78% | 83.26% |
 
-| Benchmark Suite | ARBITER-272M (BF16) | Laya (Best Variant) | GLiNER (Best Variant) | EmbeddingGemma-2 (Base) | Decisions Evaluated |
-| :--- | :---: | :---: | :---: | :---: | ---: |
-| **Grand Benchmark (60 historical suites)** | **74.47%** | 56.86% | 47.84% | 51.25% | 21,915 decisions |
-| **Public Benchmark (23 requested suites)** | **69.68%** | 53.92% | 62.86% | 59.87% | 9,252 decisions |
+### Typed Decisions & Natural Language Inference
 
-### Probabilistic Calibration & Uncertainty Quality (21,915 Decisions)
+| Benchmark / metric | ARBITER | Laya | Laya Multilingual | Laya Typed | GLiNER Decide | GLiNER Multi | EmbeddingGemma |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Typed Decisions | 65.50% | 36.20% | 35.25% | **76.75%** | 50.35% | 45.95% | 40.85% |
+| XNLI · 15 languages | 68.87% | 54.38% | **73.82%** | 55.64% | 38.24% | 38.38% | 33.56% |
+| Fast Decisions Single · micro | 43.35% | 52.96% | 46.77% | 54.92% | **64.42%** | 59.38% | 41.73% |
+| Fast Decisions Single · macro | 43.97% | 53.80% | 46.66% | 55.66% | **66.30%** | 60.63% | 42.60% |
+| Fast Decisions Multi · exact match | **4.67% (14/300)** | 2.33% (7/300) | 1.00% (3/300) | 3.67% (11/300) | 1.33% (4/300) | 4.00% (12/300) | 0.33% (1/300) |
+| Fast Decisions Multi · micro F1 | 51.37% | 51.72% | 45.50% | **56.41%** | 51.74% | 48.41% | 31.22% |
 
-| Model | Historical Micro Acc | Brier Score (↓ lower is better) | NLL (↓ lower is better) | ECE (15 bins) (↓ lower is better) | Calibration Profile |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **ARBITER-272M (BF16)** | **74.47%** | **0.3395** | **0.6761** | **0.0674** | **Superior calibration** (lowest probability error & minimal overconfidence) |
-| `EmbeddingGemma-2` (Base Pipeline) | 51.25% | 0.7106 | 1.5450 | 0.2947 | High entropy, uncalibrated pooled representations |
-| `Laya` (ConvAI base) | 48.30% | 0.7974 | 4.3655 | 0.3214 | Heavy overconfidence penalty (high NLL) |
-| `Laya-Multilingual` | 56.86% | 0.6788 | 2.3747 | 0.2769 | Moderate calibration |
-| `Laya-Typed-Decisions` | 52.66% | 0.6527 | 1.8325 | 0.2166 | Moderate calibration |
-| `GLiNER2.5-Decide` | 46.58% | 0.6611* | 1.5762* | 0.1098* | *Probabilities reconstructed via adapter (not native softmax) |
-| `GLiNER2.5-Multi-Decide` | 47.84% | 0.6664* | 1.5555* | 0.1379* | *Probabilities reconstructed via adapter (not native softmax) |
+### Overall Protocol Results
+
+| Benchmark / metric | ARBITER | Laya | Laya Multilingual | Laya Typed | GLiNER Decide | GLiNER Multi | EmbeddingGemma |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Historical · micro accuracy | **74.47%** | 48.30% | 56.86% | 52.66% | 46.58% | 47.84% | 51.25% |
+| Historical · suite macro accuracy | **77.03%** | 47.18% | 57.89% | 48.33% | 44.61% | 47.33% | 52.45% |
+| Public · micro accuracy | **69.68%** | 53.92% | 51.18% | 52.25% | 62.86% | 57.85% | 59.87% |
+
+Historical: 21,915 decisions across 60 suites. Public: 9,252 decisions across 23 suites.
+Micro averages weight decisions equally; suite macro averages weight suites equally.
+Language variants count as separate suites. These aggregates reflect this task mixture.
+Column names are abbreviated: GLiNER refers to GLiNER2.5, Laya to ConvAI base,
+and EmbeddingGemma to the EmbeddingGemma-2 baseline pipeline.
+
+### Probability Quality
+
+Measured on the same 21,915 historical decisions. GLiNER's reconstructed adapter
+probabilities are reported separately below and do not enter this comparison.
+
+| Benchmark / metric | ARBITER | Laya | Laya Multilingual | Laya Typed | GLiNER Decide | GLiNER Multi | EmbeddingGemma |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Brier score ↓ | **0.3395** | 0.7974 | 0.6788 | 0.6527 | — | — | 0.7106 |
+| NLL ↓ | **0.6761** | 4.3655 | 2.3747 | 1.8325 | — | — | 1.5450 |
+| Suite-weighted ECE · 15 bins ↓ | **0.0674** | 0.3214 | 0.2769 | 0.2166 | — | — | 0.2947 |
+
+Brier is the mean squared error of probability vectors against one-hot targets;
+NLL is mean negative log probability of the target. ECE is computed per suite with
+15 bins, then weighted by suite size (it differs from pooled ECE). ARBITER has
+**48% lower Brier and 63% lower NLL than Laya Typed** in this protocol.
+ARBITER and Laya use their native decision probabilities; EmbeddingGemma uses
+cosine-similarity softmax. Application thresholds require separate validation.
+
+<details>
+<summary>GLiNER adapter probability metrics</summary>
+
+| Metric | GLiNER Decide | GLiNER Multi |
+| :--- | ---: | ---: |
+| Brier ↓ | 0.6611 | 0.6664 |
+| NLL ↓ | 1.5762 | 1.5555 |
+| Suite-weighted ECE ↓ | 0.1098 | 0.1379 |
+
+These distributions are reconstructed by the benchmark adapter, not native
+full-candidate GLiNER distributions. A dash above means excluded from the comparable
+probability table, not that the model cannot produce confidence scores.
+
+</details>
+
+### Inference Efficiency
+
+**Accuracy–memory trade-off:** ARBITER combines **74.47% historical micro accuracy**
+with **759 MiB peak allocated GPU memory**, the lowest measured footprint among
+these pipeline configurations. Its **15.36 ms median latency is 28% lower than the
+EmbeddingGemma baseline** (21.36 ms). Compared with Laya Multilingual, it delivers
+**+17.61 accuracy points with 53% less allocated GPU memory**, at higher median
+latency (15.36 vs 9.44 ms). These comparisons apply to the evaluated task mixture
+and loading formats below.
+
+| Benchmark / metric | ARBITER | Laya | Laya Multilingual | Laya Typed | GLiNER Decide | GLiNER Multi | EmbeddingGemma |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Median latency · ms ↓ | 15.36 ms | 12.07 ms | 9.44 ms | 11.91 ms | 15.32 ms | **7.97 ms** | 21.36 ms |
+| Peak allocated VRAM · MiB ↓ | **759.0 MiB** | 2,415.8 MiB | 1,600.4 MiB | 2,438.6 MiB | 3,237.4 MiB | 3,823.4 MiB | 862.6 MiB |
+
+Historical protocol, NVIDIA GeForce RTX 5090, single-request inference. ARBITER
+and EmbeddingGemma use BF16; Laya variants use FP32; GLiNER uses its default loading
+configuration. These are measured pipeline configurations, not equal-dtype kernel
+comparisons. Latency includes each adapter's execution path. These measurements
+predate the native batch API and do not measure batched throughput.
+
+### Protocol Notes
+
+- **MASSIVE Intent:** 20 candidates (correct intent plus 19 distractors), 4,200 test
+  decisions across 14 languages; this is not full 60-intent classification.
+  Scenario uses 18 candidates and 4,200 decisions across the same languages.
+- **Banking77:** 3,080 test examples with all 77 intents. **TREC:** 500 test examples,
+  six coarse classes. **SST-2:** 872 validation examples.
+- **XNLI:** 4,500 decisions across 15 languages. **Typed Decisions:** 2,000 decisions.
+  **Fast Single:** 2,600 decisions. **Fast Multi:** 300 multi-question cases;
+  exact match requires every decision in a case to be correct, whereas micro F1
+  measures the pooled binary decisions. Public micro accuracy counts those binary
+  decisions individually, not the 300 exact-match outcomes.
+- **Supervision:** Banking77, TREC, SST-2 and MASSIVE training splits were included
+  in ARBITER's adaptation mixture. These results demonstrate supervised capability,
+  not zero-shot evaluation on unseen task families.
+- **Adapters:** comparisons use the repository's model-specific adapters. GLiNER's
+  adapter classifies the state against labels without the separate instruction;
+  results characterize these evaluated pipelines. Failed cases remain in denominators.
+- **Statistics:** bold denotes the highest observed score, not statistical significance.
+  Exploratory paired McNemar tests: TREC vs Laya Multilingual p=0.0019;
+  Banking77 vs EmbeddingGemma p=0.0068. These assume independent examples and are
+  unadjusted for multiple comparisons.
+
+<details>
+<summary>Additional reasoning and long-context evaluations</summary>
+
+These auxiliary evaluations have a narrower comparator set than the main tables.
+Tasksource Long is an existing project validation set, not a certified unseen-domain test.
+
+| Evaluation Benchmark | Domain | Items | ARBITER-272M | Baseline Comparison | Note |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **Tasksource Long** | Long context (up to 4,096 tokens) | 2,373 | **58.45%** | Laya-Typed 32.91% | Observed advantage on long-context criteria matching (+25.5 pts). |
+| **ARC-Easy** | Elementary science reasoning | 2,376 | **48.48%** | Laya-Typed 48.48% | Tied with Laya-Typed (48.48%), outperforms Laya-Base (47.26%). |
+| **ARC-Challenge** | Hard science reasoning | 1,172 | **33.79%** | Laya-Typed 31.57% | McNemar test p = 0.2180 (observed gain; not statistically significant). |
+| **HellaSwag** | Common-sense inference | 1,000 | **41.80%** | Laya-Base 35.90% | Outperforms Laya-Base (+5.9 pts) and GLiNER (29.80%, +12.0 pts). |
+
+</details>
 
 ---
 
@@ -220,3 +324,7 @@ Expected output:
   howpublished={\url{https://huggingface.co/spectral-ai-lab/arbiter-272m}},
 }
 ```
+
+### Native batching
+
+`decide_batch()` and `predict_batch()` support length-based batching with token and attention budgets. `predict()` batches its questions automatically. See [batching, examples and deployment limits](docs/batching.md).
