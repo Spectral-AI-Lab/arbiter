@@ -244,7 +244,7 @@ def evaluate(args):
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--model', choices=['all','embeddinggemma2','trained-eg2','arbiter','arbiter-272m',*MODELS], default='all')
-    p.add_argument('--checkpoint', type=Path, help='Trained EG2 checkpoint (trained-eg2 only)')
+    p.add_argument('--checkpoint', type=Path, help='EG2 checkpoint file or ARBITER inference-package directory')
     p.add_argument('--data', type=Path, default=HERE/'data/cases.jsonl')
     p.add_argument('--output', type=Path, default=ROOT/'results/laya_comparison')
     p.add_argument('--suites', nargs='+')
