@@ -64,3 +64,60 @@ def test_atomic_checkpoint_rng_roundtrip(tmp_path):
     assert saved['step'] == 1
     assert torch.equal(saved['rng'], torch.get_rng_state())
     assert not path.with_suffix('.tmp').exists()
+
+
+def test_source_grouping_and_soft_labels():
+    from finetuning.prepare_sources import split_group, typed_rows
+    source = dict(id='train-1', workflow='invoice', state='{"n":1}',
+                  questions={'severity': {'type':'score','instructions':'Rate.', 'criteria':{'0':'low','1':'high'}}},
+                  gold={'severity': {'probabilities':{'0':.3,'1':.7}}})
+    r, = list(typed_rows(source, 'a'*40))
+    assert r['target'] == {'0':.3,'1':.7}
+    assert r['group_id'] == 'typed:train-1'
+    assert split_group(r['group_id'],13) == split_group(r['group_id'],13)
+
+
+def test_training_resume_matches_uninterrupted(tmp_path, monkeypatch):
+    """Real optimizer/backward/scheduler/RNG with a tiny CPU fixture model."""
+    import sys
+    from types import SimpleNamespace
+    import finetuning.train as trainer
+    class Tiny(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.language_model = torch.nn.Sequential(torch.nn.Embedding(8,4), torch.nn.Dropout(.1))
+            self.decision_head = torch.nn.Linear(4,2)
+            self.tokenizer = SimpleNamespace(pad_token_id=0)
+        def _prepare_decision(self, **r):
+            return dict(ids=[1,2], positions=[0,1], keys=list(r['criteria']), question_type=r['question_type'])
+        def forward(self, input_ids, **kwargs):
+            logits = self.decision_head(self.language_model(input_ids).mean(1))
+            return {'logits': logits, 'mask': torch.ones_like(logits,dtype=torch.bool)}
+    monkeypatch.setattr(trainer.ArbiterModel,'from_pretrained',lambda *args,**kw: Tiny())
+    monkeypatch.setattr(trainer,'export',lambda model,path: None)
+    base = tmp_path/'base';base.mkdir()
+    tr=tmp_path/'train.jsonl'; va=tmp_path/'val.jsonl'; held=tmp_path/'heldout.jsonl'
+    tr.write_text('\n'.join(json.dumps(row(str(i),str(i),f'train {i}')) for i in range(5)))
+    va.write_text(json.dumps(row('v','v','validation')))
+    held.write_text(json.dumps({'state':'reserved'}))
+    def run(output,resume=False):
+        args = ['train','--model',str(base),'--train',str(tr),'--validation',str(va),
+                '--heldout',str(held),'--output',str(output),'--device','cpu','--epochs','2',
+                '--batch-size','2','--accumulation','2','--eval-every','1']
+        if resume: args += ['--resume']
+        monkeypatch.setattr(sys,'argv',args)
+        trainer.main()
+    full, interrupted = tmp_path/'full', tmp_path/'interrupted'
+    run(full)
+    save = trainer.atomic_checkpoint
+    def stop_after_save(path,payload):
+        save(path,payload)
+        raise InterruptedError('simulated stop after complete optimizer step')
+    monkeypatch.setattr(trainer,'atomic_checkpoint',stop_after_save)
+    with pytest.raises(InterruptedError): run(interrupted)
+    monkeypatch.setattr(trainer,'atomic_checkpoint',save)
+    run(interrupted,True)
+    a,b = [torch.load(p/'latest.pt',weights_only=False) for p in (full,interrupted)]
+    assert a['step'] == b['step'] == 4
+    for key in a['model']:
+        torch.testing.assert_close(a['model'][key],b['model'][key],rtol=0,atol=0)
