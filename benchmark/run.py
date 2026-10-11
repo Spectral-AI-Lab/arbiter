@@ -31,8 +31,8 @@ MODELS = {
     'laya': ('convaiinnovations/laya', '55cf4c4ebb4ebe31b2550e8bdf3bd21b99753851'),
     'laya-multilingual': ('convaiinnovations/laya-multilingual', 'e4e9ddf21a7b1903b7acffd8814ad4307bf63a67'),
     'laya-typed-decisions': ('convaiinnovations/laya-typed-decisions', '1a793eb568e6718f15941d08f85432581df534e3'),
-    'gliner25-decide': ('fastino/GLiNER2.5-Decide', None),
-    'gliner25-multi-decide': ('helmo/GLiNER2.5-multi-Decide', None),
+    'gliner25-decide': ('fastino/GLiNER2.5-Decide', '9d1bfb848cd16d93ee56ccbc59cd92bf0f284d90'),
+    'gliner25-multi-decide': ('helmo/GLiNER2.5-multi-Decide', '906de0a06de5d9ef3757a665d4bcbcde6f5cec6c'),
 }
 
 
@@ -155,10 +155,10 @@ def evaluate(args):
             )
         elif args.model.startswith('gliner25-'):
             from gliner_adapter import GLiNERDecisionAgent
-            repo, _ = MODELS[args.model]
-            agent = GLiNERDecisionAgent(repo, str(device))
+            repo, revision = MODELS[args.model]
+            agent = GLiNERDecisionAgent(repo, str(device), revision=revision)
             predict = lambda row: agent.predict(row['state'], row['questions'])
-            metadata.update(repo=repo, dtype='model-default')
+            metadata.update(repo=repo, revision=revision, dtype='model-default')
         else:
             import laya
             repo, revision = MODELS[args.model]

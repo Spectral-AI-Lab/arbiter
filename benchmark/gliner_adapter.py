@@ -3,7 +3,10 @@ import json
 
 
 class GLiNERDecisionAgent:
-    def __init__(self, repo, device):
+    def __init__(self, repo, device, *, revision):
+        from huggingface_hub import snapshot_download
+
+        model_path = snapshot_download(repo_id=repo, revision=revision)
         eager = False
         try:
             from gliner2 import AutoExtractor
@@ -21,9 +24,9 @@ class GLiNERDecisionAgent:
         # GLiNER2 >=2.0 selects the architecture from the checkpoint and
         # accepts only map_location. Older releases need the eager override.
         if eager:
-            self.model = AutoExtractor.from_pretrained(repo, map_location=device)
+            self.model = AutoExtractor.from_pretrained(model_path, map_location=device)
         else:
-            self.model = AutoExtractor.from_pretrained(repo, map_location=device)
+            self.model = AutoExtractor.from_pretrained(model_path, map_location=device)
         self.device = device
 
     @staticmethod

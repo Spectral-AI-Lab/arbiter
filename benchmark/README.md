@@ -2,6 +2,19 @@
 
 This module provides the standalone evaluation harness and frozen datasets required to reproduce empirical benchmarks for **ARBITER-272M**, **EmbeddingGemma-2 base** (`hf_pipeline/`), **Laya** (ConvAI), and **GLiNER**.
 
+## Installation
+
+Run from the repository root after obtaining ARBITER weights (see the root README).
+For ARBITER-only evaluation: `python -m pip install -e '.[benchmark]'`.
+For all comparators, additionally run:
+
+```bash
+(cd benchmark && python -m pip install -r requirements.txt)
+```
+
+The comparator dependencies are separate from the inference wheel. GLiNER revisions
+are pinned for future runs; older reported runs must retain their original provenance.
+
 ## Quick Reproduction
 
 ### 1. Public Suites (23 suites, 9,252 decisions: SST-2, TREC, Banking77, Fast Decisions)
@@ -69,7 +82,7 @@ Upstream sources: [official scripts & protocols](https://github.com/NandhaKishor
 
 ## GPU Execution from Notebook or CLI
 
-In `notebook/benchmark_laya.ipynb`, configure `DEVICE = "cuda:0"` (GPU) or `DEVICE = "cpu"`.
+Select `--device cuda:0` for GPU or `--device cpu` for CPU in the commands below.
 
 ```bash
 python benchmark/run.py --model all --device cuda:0 --threads 8 --output results/laya_comparison_cuda_0
