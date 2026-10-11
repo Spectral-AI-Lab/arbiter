@@ -30,7 +30,7 @@ def typed_rows(row, revision):
         context = row['state']
     for qid, question in questions.items():
         kind = question['type']
-        criteria = question['criteria']
+        criteria = question.get('criteria')
         if kind == 'noul':
             criteria = {'false': 'The statement is false.', 'true': 'The statement is true.'}
         elif isinstance(criteria, list):
