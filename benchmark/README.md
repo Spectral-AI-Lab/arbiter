@@ -90,3 +90,23 @@ python benchmark/compare.py results/laya_comparison_cuda_0
 ```
 
 Each model runs in a separate process on the requested device without silent CPU fallback. CUDA timings are synchronized before and after each successful call. Metadata records GPU device, CUDA version, and PyTorch peak allocated/reserved memory stats.
+
+## Targeted base/adapted report
+
+Run each package on both frozen files using distinct output directories (see the
+fine-tuning guide). Then generate the six target rows without model-name collisions:
+
+```bash
+python -m benchmark.targeted_report \
+  --base results/base/historical/arbiter results/base/public/arbiter \
+  --adapted results/adapted/historical/arbiter results/adapted/public/arbiter \
+  --output results/targeted_before_after.md
+```
+
+Use the actual directories containing metadata.json and predictions.jsonl. The report
+requires completed runs, one checkpoint hash per variant, and every frozen target
+request with matching input/target hashes. Subset evaluations are rejected. It reports
+Typed, XNLI (15 languages), Fast Single micro/macro and Fast Multi exact match/micro-F1.
+Binary positive label is `true`; F1 pools TP/FP/FN across questions. Fast Multi failures
+abort the report rather than silently excluding missing labels. Other accuracies keep
+failed decisions in the denominator. Differences are descriptive, not significance tests.

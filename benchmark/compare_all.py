@@ -17,6 +17,8 @@ def discover(paths):
             if m.get('status') != 'completed':
                 continue
             name = m.get('model', d.name)
+            if name in runs:
+                raise ValueError(f'Duplicate model name {name}; use targeted_report for base/adapted variants')
             runs[name] = (m, json.loads(summary.read_text()))
     if not runs:
         raise SystemExit('No completed runs found')
@@ -47,7 +49,7 @@ def main(paths, output):
         'Applications': lambda s: s.startswith(('app.', 'jev.')),
     }
     lines = ['# Aggregated Domain Comparison', '',
-             'Values are weighted averages based on expected response counts.', '']
+             'Values are weighted averages based on expected response counts. Latency columns average suite percentiles; they are not pooled percentiles.', '']
     metric_specs = [
         ('Accuracy (%)', 'accuracy_including_failures', 100, '.1f'),
         ('Latency p50 (ms)', 'latency_p50_ms', 1, '.1f'),
@@ -75,7 +77,7 @@ def main(paths, output):
     for model, (meta, report) in sorted(runs.items()):
         rows = list(report.values())
         n = sum(r.get('expected_answers', 0) for r in rows)
-        lines.append(f"| {model} | {n} | {weighted(rows, 'accuracy_including_failures'):.3f} | "
+        lines.append(f"| {model} | {n} | {100*weighted(rows, 'accuracy_including_failures'):.3f} | "
                      f"{weighted(rows, 'ece_15'):.3f} | {weighted(rows, 'latency_p50_ms'):.1f} | "
                      f"{weighted(rows, 'latency_p95_ms'):.1f} |")
         aggregate[model]['metadata'] = meta
