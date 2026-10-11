@@ -52,7 +52,7 @@ def evaluate(args):
     if device.type == 'cuda':
         if not torch.cuda.is_available():
             raise RuntimeError('CUDA unavailable: choose --device cpu or install a CUDA-enabled PyTorch')
-        torch.cuda.set_device(device)
+        torch.cuda.set_device(device.index if device.index is not None else torch.cuda.current_device())
         device = torch.device('cuda', torch.cuda.current_device())
         torch.cuda.reset_peak_memory_stats(device)
     def synchronize():
