@@ -5,7 +5,7 @@
 [![Model Size](https://img.shields.io/badge/Model_Size-272M_Parameters-orange.svg)](#)
 [![Format](https://img.shields.io/badge/Format-Safetensors_BF16_(544_MB)-purple.svg)](#)
 
-**ARBITER** is an industrial-grade, ultra-compact foundation encoder designed for **decision-making, routing, and relational structured reasoning** in autonomous AI agents and enterprise production systems.
+**ARBITER** is a compact encoder designed for **decision-making, routing, and relational structured reasoning** in autonomous AI agents and enterprise production systems.
 
 Built upon the **ARBITER** relational architecture (Inter-Candidate Set-Attention & Dynamic HyperFiLM Modulation), ARBITER jointly encodes context, instructions, and candidate options, allowing competing choices to attend to one another rather than being evaluated in isolation.
 
@@ -28,19 +28,37 @@ Built upon the **ARBITER** relational architecture (Inter-Candidate Set-Attentio
 ## Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/seif-attoui/arbiter.git
 cd arbiter
-
-# Install in editable mode
-pip install -e .
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
 ```
 
-### Dependencies
-- Python >= 3.10
-- PyTorch >= 2.0.0
-- Transformers >= 4.45.0
-- Safetensors >= 0.4.0
+Requires Python >=3.11, PyTorch >=2.0, Transformers >=5.19 and safetensors >=0.4.
+The tested environment is recorded in [development instructions](CONTRIBUTING.md).
+Install a CUDA-enabled PyTorch build to use a GPU; the first example also runs on CPU.
+
+### Obtain the weights
+
+Git contains the code, configuration and tokenizer, **not the model weights**.
+Place the complete release package in `checkpoints/arbiter-272m/` before running
+local examples. It must contain `model.safetensors`, `config.json`, `tokenizer.json`
+and `tokenizer_config.json` from the same release.
+
+Once you have access to the HF release, download it using its exact commit:
+
+```bash
+hf download spectral-ai-lab/arbiter-272m --revision <release-commit> --local-dir checkpoints/arbiter-272m
+```
+
+Replace `<release-commit>` with the published release SHA. This repository does not
+yet record an accessible public release revision; a private repository requires
+`hf auth login` and access. A 404 can mean unavailable or unauthorized weights.
+After downloading the complete package, local inference requires no network access.
+The library wheel contains inference only; fine-tuning and benchmark commands below
+run from this Git checkout.
 
 ---
 
@@ -52,7 +70,7 @@ pip install -e .
 from arbiter import ArbiterModel
 
 # Load the official 272M model in native BF16 from the local checkpoint
-model = ArbiterModel.from_pretrained("checkpoints/arbiter-272m", device="cuda:0")
+model = ArbiterModel.from_pretrained("checkpoints/arbiter-272m", device="cpu", local_files_only=True)
 
 # Route a customer support ticket to the appropriate service
 result = model.decide(
@@ -104,26 +122,25 @@ print(results["answers"])
 
 ---
 
+## Workflows
+
+- [Native batch inference](docs/batching.md): `decide_batch()` and `predict_batch()`.
+- [Fine-tuning commands](finetuning/README.md): build data, validate, train, resume and evaluate.
+- [Guided notebook](finetuning/finetunning_arbiter.ipynb): the same workflow, cell by cell.
+- [Benchmark reproduction](benchmark/README.md): ARBITER and baseline comparisons.
+- [Development and tests](CONTRIBUTING.md).
+
 ## Repository Structure
 
-```
-arbiter/
-├── arbiter/                         # Core Python package
-│   ├── __init__.py                  # Package exports (ArbiterModel, ArbiterConfig)
-│   ├── configuration_arbiter.py     # Configuration class
-│   └── modeling_arbiter.py          # PyTorch model architecture & inference logic
-├── checkpoints/
-│   └── arbiter-272m/                # Release model package
-│       ├── model.safetensors        # 544 MB BF16 weights (429 tensors)
-│       ├── config.json              # Model configuration
-│       ├── tokenizer.json           # Fast tokenizer with <OPTION> special token
-│       ├── tokenizer_config.json    # Tokenizer settings
-│       └── README.md                # Official Model Card
-├── tests/
-│   └── test_arbiter_parity.py       # Strict numerical parity and contract validation
-├── pyproject.toml                   # Standard PEP 517/621 packaging metadata
-├── LICENSE                          # Apache-2.0 License for source code
-└── README.md                        # Documentation
+```text
+arbiter/       # Installable inference library
+finetuning/    # Dataset builder, trainer, verifier and guided notebook
+benchmark/     # Frozen requests, metrics and comparator adapters
+hf_pipeline/   # Untrained EmbeddingGemma baseline, not the ARBITER loader
+checkpoints/   # Release config/tokenizer; weights downloaded separately
+tests/         # Unit and real-weight integration tests
+docs/          # Batching, data recipe and validation reports
+examples/      # Runnable inference measurements
 ```
 
 ## Benchmark Results
@@ -286,16 +303,18 @@ python benchmark/run.py --model arbiter-272m \
 
 ## Testing & Numerical Parity
 
-To verify strict numerical parity against the original reference checkpoint and validate input contracts:
-
 ```bash
-python tests/test_arbiter_parity.py
+python -m pip install -e '.[dev,finetuning,benchmark]'
+# No weights or GPU required:
+CUDA_VISIBLE_DEVICES='' python -m pytest tests benchmark/tests -m 'not integration' -q
+# After obtaining the complete release package:
+CUDA_VISIBLE_DEVICES='' python -m pytest tests benchmark/tests -q
 ```
 
-Expected output:
-- **Decision Agreement Rate**: 100.0% (8/8)
-- **Maximum Probability Delta**: `0.00e+00` (exact bit-level identity in native BF16)
-- **Contract Validations**: 4/4 passed (rejection of invalid question types, empty criteria, adversarial `<OPTION>` token sanitization, multi-question dictionary API).
+The optional `tests/test_arbiter_parity.py` script compares an internal reference
+checkpoint with the export. It additionally requires the original training repository
+and reference weights; it is not the public installation check. See
+[development instructions](CONTRIBUTING.md) for release validation.
 
 ---
 
@@ -331,4 +350,4 @@ Expected output:
 
 ## Targeted fine-tuning
 
-See the [data and training plan](docs/targeted_finetuning.md) and the [guided notebook](notebooks/targeted_finetuning.ipynb) for adapting Typed, NLI and policy decisions while tracking routing retention. The opt-in `finetuning/` tools provide audited JSONL input, supervised training, TensorBoard and resumable checkpoints. The proposed 80k corpus is not bundled; no improvement is claimed before evaluation.
+Start with the [command-line fine-tuning guide](finetuning/README.md) or the [guided notebook](finetuning/finetunning_arbiter.ipynb). Both support building an 80k training / 8k validation mixture from pinned public sources, data checks, training, TensorBoard and resume. Data is generated locally rather than bundled in Git. See the [dataset recipe](docs/build_80k.md) and [training plan](docs/targeted_finetuning.md) for scope and limitations; no benchmark improvement is claimed before evaluation.
