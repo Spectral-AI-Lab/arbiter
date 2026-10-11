@@ -1,6 +1,10 @@
 """Autonomous Unit & Integration Test for ARBITER package.
 Self-contained: does not depend on external experimental repositories.
 """
+import pytest
+
+pytestmark = pytest.mark.integration
+
 from contextlib import contextmanager
 from pathlib import Path
 import torch

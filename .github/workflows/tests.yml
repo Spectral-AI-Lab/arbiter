@@ -1,0 +1,33 @@
+name: Library checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  cpu:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.12']
+    env:
+      CUDA_VISIBLE_DEVICES: ''
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev,finetuning,benchmark]'
+      - run: python -m pytest tests benchmark/tests -m 'not integration' -q
+      - run: python scripts/check_docs.py
+      - run: python -m build
+      - name: Check installed wheel outside checkout
+        run: |
+          python -m pip uninstall -y arbiter
+          python -m pip install --no-deps dist/*.whl
+          cd "${RUNNER_TEMP}"
+          python -c "from arbiter import ArbiterModel, ArbiterConfig; print('Wheel imports passed')"

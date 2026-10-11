@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "arbiter"
 version = "1.0.0"
 description = "ARBITER: Attentive Relational Bidirectional Impartial Typed Encoder for Reasoning"
-readme = "checkpoints/arbiter-272m/README.md"
-requires-python = ">=3.10"
+readme = "README.md"
+requires-python = ">=3.11"
 license = "Apache-2.0"
 authors = [
     {name = "Seif Attoui"},
@@ -31,6 +31,11 @@ benchmark = [
     "sentence-transformers>=3.0.0",
     "datasets>=3.0.0",
 ]
+
+dev = ["pytest>=8.0", "build>=1.2", "nbformat>=5.9"]
+
+[tool.pytest.ini_options]
+markers = ["integration: requires downloaded ARBITER weights"]
 
 [tool.setuptools.packages.find]
 include = ["arbiter*"]
