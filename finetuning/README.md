@@ -6,6 +6,9 @@ not from this `finetuning/` directory.
 The workflow is: **build data → check data → train → evaluate**.
 The original model stays unchanged. Your adapted model is saved in a separate folder.
 
+For the released specialist, start with [Reproduce ARBITER Typed](TYPED_SPECIALIST.md).
+The notebook defaults to `typed`. The 80k and replay recipes are experimental.
+
 ## 1. Install
 
 Activate your Python environment, then install the project:
@@ -41,7 +44,7 @@ ARBITER provides two fine-tuning presets in [`finetuning.configs`](configs.py):
 ### Build the 80k mixture dataset (`mixture_80k`)
 
 ```bash
-python -m finetuning.build_80k \
+python scripts/prepare_adaptation.py --preset mixture_80k \
   --model checkpoints/arbiter-272m \
   --heldout benchmark/data/cases.jsonl benchmark/data/public_requested_v1/cases.jsonl \
   --output results/adaptation/80k_typed \
@@ -67,6 +70,21 @@ results/adaptation/80k_typed/
 
 The builder runs on CPU. It does not train the model or call a paid API. It reuses
 matching completed outputs; it never duplicates rows to fill a missing quota.
+
+### Prepare the Typed preset
+
+```bash
+python scripts/prepare_adaptation.py --preset typed \
+  --model checkpoints/arbiter-272m \
+  --heldout benchmark/data/cases.jsonl benchmark/data/public_requested_v1/cases.jsonl \
+  --output results/adaptation/typed --seed 13 --max-length 1024
+```
+
+For Typed preflight, use the same Step 3 command with train/validation paths under
+`results/adaptation/typed/` and a fresh preflight output. Preparation verifies existing
+Typed files against the pinned source conversion; it does not merely test existence.
+Use a new destination if preparation was interrupted or the recipe differs.
+The verified wrapper is the supported preparation entrypoint.
 
 ## 3. Check the data before training
 
@@ -224,6 +242,43 @@ For a before/after comparison, run the same commands with
 `--checkpoint checkpoints/arbiter-272m` and different output directories.
 A positive `--limit` is for smoke tests only, not publishable benchmark scores.
 
+## Adapt on your own data in 5 lines
+
+You can easily adapt ARBITER to your own domain (support tickets, intent routing, policy triage) by converting any CSV or DataFrame into the ARBITER JSONL format:
+
+```python
+import pandas as pd, json
+
+df = pd.DataFrame([
+    {"context": "Cannot reset my 2FA password.", "label": "auth"},
+    {"context": "Charged twice for subscription.", "label": "billing"}
+])
+criteria = {"auth": "Login and 2FA issues", "billing": "Invoice and charge errors"}
+
+rows = [{
+    "id": f"row_{i}", "group_id": f"grp_{i}", "family": "custom/support",
+    "source": "internal", "source_revision": "v1", "source_split": "train",
+    "license": "proprietary", "context": r["context"],
+    "instruction": "Classify the ticket category",
+    "question_type": "choice", "criteria": criteria,
+    "target": {c: 1.0 if c == r["label"] else 0.0 for c in criteria}
+} for i, r in df.iterrows()]
+
+with open("train.jsonl", "w") as f:
+    for row in rows: f.write(json.dumps(row) + "\n")
+```
+
+Then launch adaptation with:
+
+```bash
+python -m finetuning.train \
+  --model checkpoints/arbiter-272m \
+  --train train.jsonl --validation val.jsonl \
+  --heldout benchmark/data/cases.jsonl \
+  --output results/my-custom-model \
+  --epochs 3 --batch-size 4 --accumulation 8
+```
+
 ## Common problems
 
 | Problem | Fix |
@@ -236,7 +291,7 @@ A positive `--limit` is for smoke tests only, not publishable benchmark scores.
 | Train/test overlap | Fix the new training split; do not delete evaluation examples |
 
 Prefer a notebook? Open [the guided notebook](../finetuning/finetunning_arbiter.ipynb).
-For what has actually been tested, read the [validation report](../docs/finetuning_validation.md).
+Run `python -m pytest tests benchmark/tests -m "not integration" -q` to check the CPU contracts. Full model validation requires the downloaded weights and the benchmark datasets.
 
 ## Interruptions and exports
 
@@ -246,3 +301,7 @@ Use `--stop-after-step` for a planned stop at a saved optimizer boundary.
 The trainer hashes code, base files, paths and settings: keep them unchanged for resume.
 Load or copy `best/` after training/export has completed; its files are not promoted
 as one atomic directory transaction.
+
+## Reproduce the released Typed specialist
+
+See [the Typed specialist guide](TYPED_SPECIALIST.md) for the exact data hashes, three-epoch command, TensorBoard and full benchmark commands. This recipe is distinct from the 80k and replay experiments.

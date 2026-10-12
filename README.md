@@ -27,6 +27,14 @@ Built upon the **ARBITER** relational architecture (Inter-Candidate Set-Attentio
 
 ## Installation
 
+From PyPI:
+
+```bash
+pip install spectral-arbiter
+```
+
+Or from source for development:
+
 ```bash
 git clone https://github.com/seif-attoui/arbiter.git
 cd arbiter
@@ -137,7 +145,7 @@ arbiter/       # Installable inference library
 finetuning/    # Dataset builder, trainer, verifier and guided notebook
 benchmark/     # Frozen requests, metrics and comparator adapters
 hf_pipeline/   # Untrained EmbeddingGemma baseline, not the ARBITER loader
-checkpoints/   # Release config/tokenizer; weights downloaded separately
+checkpoints/   # Local downloaded model packages (Git-ignored)
 tests/         # Unit and real-weight integration tests
 docs/          # Batching, data recipe and validation reports
 examples/      # Runnable inference measurements
@@ -327,8 +335,8 @@ and reference weights; it is not the public installation check. See
 
 ## Authors & Contributors
 
-* **Seif Attoui** (Equal contribution)
 * **Ichrak Mokhtari** (Equal contribution)
+* **Seif Attoui** (Equal contribution)
 
 ---
 
@@ -337,7 +345,7 @@ and reference weights; it is not the public installation check. See
 ```bibtex
 @misc{arbiter2026,
   title={ARBITER: Attentive Relational Bidirectional Impartial Typed Encoder for Reasoning},
-  author={Attoui, Seif and Mokhtari, Ichrak},
+  author={Mokhtari, Ichrak and Attoui, Seif},
   year={2026},
   note={Equal contribution},
   howpublished={\url{https://huggingface.co/spectral-ai-lab/arbiter-272m}},
@@ -350,4 +358,48 @@ and reference weights; it is not the public installation check. See
 
 ## Targeted fine-tuning
 
-Start with the [command-line fine-tuning guide](finetuning/README.md) or the [guided notebook](finetuning/finetunning_arbiter.ipynb). Both support building an 80k training / 8k validation mixture from pinned public sources, data checks, training, TensorBoard and resume. Data is generated locally rather than bundled in Git. See the [dataset recipe](docs/build_80k.md) and [training plan](docs/targeted_finetuning.md) for scope and limitations; no benchmark improvement is claimed before evaluation.
+Start with the [command-line fine-tuning guide](finetuning/README.md) or the [guided notebook](finetuning/finetunning_arbiter.ipynb). Both support building an 80k training / 8k validation mixture from pinned public sources, data checks, training, TensorBoard and resume. Data is generated locally rather than bundled in Git. See the [dataset recipe](docs/build_80k.md) for scope and limitations; no benchmark improvement is claimed before evaluation.
+
+### Adapt on your own data in 5 lines
+
+You can easily adapt ARBITER to your custom enterprise data (support tickets, intent routing, policy triage) by converting any CSV or DataFrame into the ARBITER JSONL format:
+
+```python
+import pandas as pd, json
+
+# 1. Your tabular data
+df = pd.DataFrame([
+    {"context": "Cannot reset my 2FA password.", "label": "auth"},
+    {"context": "Charged twice for subscription.", "label": "billing"}
+])
+criteria = {"auth": "Login and 2FA issues", "billing": "Invoice and charge errors"}
+
+# 2. Format into ARBITER decision contract
+rows = [{
+    "id": f"row_{i}", "group_id": f"grp_{i}", "family": "custom/support",
+    "source": "internal", "source_revision": "v1", "source_split": "train",
+    "license": "proprietary", "context": r["context"],
+    "instruction": "Classify the ticket category",
+    "question_type": "choice", "criteria": criteria,
+    "target": {c: 1.0 if c == r["label"] else 0.0 for c in criteria}
+} for i, r in df.iterrows()]
+
+# 3. Save to JSONL
+with open("train.jsonl", "w") as f:
+    for row in rows: f.write(json.dumps(row) + "\n")
+```
+
+Then train with:
+
+```bash
+python -m finetuning.train \
+  --model checkpoints/arbiter-272m \
+  --train train.jsonl --validation val.jsonl \
+  --heldout benchmark/data/cases.jsonl \
+  --output results/my-custom-model \
+  --epochs 3 --batch-size 4 --accumulation 8
+```
+
+## ARBITER Typed specialist
+
+The Typed specialist reaches 76.45% on Typed Decisions versus 65.50% for the base. See the [reproduction instructions](finetuning/TYPED_SPECIALIST.md) and [specialist model card](docs/model_card_typed.md).
