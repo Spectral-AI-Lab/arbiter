@@ -8,8 +8,6 @@ tags:
 - classification
 - ordinal-regression
 - safetensors
-datasets:
-- LocalLLaMA/typed-decisions
 ---
 # ARBITER-272M-Typed
 
