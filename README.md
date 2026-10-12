@@ -12,7 +12,6 @@ Built upon the **ARBITER** relational architecture (Inter-Candidate Set-Attentio
 ## Try ARBITER in your browser
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb)
-**[View the Getting Started notebook](notebooks/getting_started.ipynb)**
 
 Try Base or Typed with ready-to-run examples for choices, boolean decisions, ordinal scores, and native batching. Expected answers are shown alongside predictions. Open Colab, connect to a runtime, then select **Runtime → Run all**. The notebook installs the package and downloads the model from Hugging Face; no local setup is needed.
 
