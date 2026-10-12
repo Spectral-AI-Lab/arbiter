@@ -48,7 +48,7 @@ In another terminal:
 tensorboard --logdir results/typed-specialist-reproduction/tensorboard --host 0.0.0.0 --port 6006
 ```
 
-In `finetuning/finetunning_arbiter.ipynb`, select `CONFIG_NAME = "typed"`, set a new
+In `notebooks/finetuning_arbiter.ipynb`, select `CONFIG_NAME = "typed"`, set a new
 `RUN_NAME`, then execute preparation, preflight and training in order. The notebook
 uses the same three-epoch preset. The original environment and file hashes are
 in the specialist's HF `reproduction.json`. Original trainer code matches Git commit

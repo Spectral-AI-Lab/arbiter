@@ -15,7 +15,7 @@ for path in files:
             continue
         if not (path.parent / target.split('#')[0]).exists():
             errors.append(f'{path.relative_to(ROOT)}: missing link {target}')
-for path in ROOT.joinpath('finetuning').glob('*.ipynb'):
+for path in list(ROOT.joinpath('notebooks').glob('*.ipynb')) + list(ROOT.joinpath('finetuning').glob('*.ipynb')):
     notebook = json.loads(path.read_text())
     for index, cell in enumerate(notebook['cells']):
         if cell['cell_type'] == 'code':

@@ -290,7 +290,7 @@ python -m finetuning.train \
 | Input exceeds the token budget | Check that builder and trainer use the same maximum length |
 | Train/test overlap | Fix the new training split; do not delete evaluation examples |
 
-Prefer a notebook? Open [the guided notebook](../finetuning/finetunning_arbiter.ipynb).
+Prefer a notebook? Open [the guided notebook](../notebooks/finetuning_arbiter.ipynb).
 Run `python -m pytest tests benchmark/tests -m "not integration" -q` to check the CPU contracts. Full model validation requires the downloaded weights and the benchmark datasets.
 
 ## Interruptions and exports

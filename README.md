@@ -5,7 +5,7 @@
 [![Model Size](https://img.shields.io/badge/Model_Size-272M_Parameters-orange.svg)](#)
 [![Format](https://img.shields.io/badge/Format-Safetensors_BF16_(544_MB)-purple.svg)](#)
 
-**ARBITER** is a compact encoder designed for **decision-making, routing, and relational structured reasoning** in autonomous AI agents and enterprise production systems.
+**ARBITER** is a compact encoder by **Spectral AI Lab** (*Where intelligence emerges*), designed for **decision-making, routing, and relational structured reasoning** in autonomous AI agents and enterprise production systems.
 
 Built upon the **ARBITER** relational architecture (Inter-Candidate Set-Attention & Dynamic HyperFiLM Modulation), ARBITER jointly encodes context, instructions, and candidate options, allowing competing choices to attend to one another rather than being evaluated in isolation.
 
@@ -36,7 +36,7 @@ pip install spectral-arbiter
 Or from source for development:
 
 ```bash
-git clone https://github.com/seif-attoui/arbiter.git
+git clone https://github.com/spectral-ai-lab/arbiter.git
 cd arbiter
 python3.11 -m venv .venv
 source .venv/bin/activate
@@ -134,7 +134,7 @@ print(results["answers"])
 
 - [Native batch inference](docs/batching.md): `decide_batch()` and `predict_batch()`.
 - [Fine-tuning commands](finetuning/README.md): build data, validate, train, resume and evaluate.
-- [Guided notebook](finetuning/finetunning_arbiter.ipynb): the same workflow, cell by cell.
+- [Guided notebook](notebooks/finetuning_arbiter.ipynb): the same workflow, cell by cell.
 - [Benchmark reproduction](benchmark/README.md): ARBITER and baseline comparisons.
 - [Development and tests](CONTRIBUTING.md).
 
@@ -358,7 +358,7 @@ and reference weights; it is not the public installation check. See
 
 ## Targeted fine-tuning
 
-Start with the [command-line fine-tuning guide](finetuning/README.md) or the [guided notebook](finetuning/finetunning_arbiter.ipynb). Both support building an 80k training / 8k validation mixture from pinned public sources, data checks, training, TensorBoard and resume. Data is generated locally rather than bundled in Git. See the [dataset recipe](docs/build_80k.md) for scope and limitations; no benchmark improvement is claimed before evaluation.
+Start with the [command-line fine-tuning guide](finetuning/README.md) or the [guided notebook](notebooks/finetuning_arbiter.ipynb). Both support building an 80k training / 8k validation mixture from pinned public sources, data checks, training, TensorBoard and resume. Data is generated locally rather than bundled in Git. See the [dataset recipe](docs/build_80k.md) for scope and limitations; no benchmark improvement is claimed before evaluation.
 
 ### Adapt on your own data in 5 lines
 

@@ -1,7 +1,7 @@
 # Build the public 80k adaptation dataset
 
 Use the [command-line guide](../finetuning/README.md) or Step 3 of the
-[notebook](../finetuning/finetunning_arbiter.ipynb). The same `finetuning.build_80k`
+[notebook](../notebooks/finetuning_arbiter.ipynb). The same `finetuning.build_80k`
 module is used by both.
 
 ## What is built

@@ -73,7 +73,7 @@ See the GitHub repository's `finetuning/TYPED_SPECIALIST.md` for dataset prepara
 
 ## Usage
 
-Install the ARBITER package from https://github.com/seif-attoui/arbiter, then download this repository to a local directory. The package provides the custom loader; this release is not a standard Transformers text-classification pipeline.
+Install the ARBITER package from https://github.com/spectral-ai-lab/arbiter, then download this repository to a local directory. The package provides the custom loader; this release is not a standard Transformers text-classification pipeline.
 
 ```python
 from huggingface_hub import snapshot_download
