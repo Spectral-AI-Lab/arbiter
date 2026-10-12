@@ -21,6 +21,7 @@ import torch
 from safetensors.torch import save_file
 from arbiter import ArbiterModel
 from .data import read_rows, audit, prepare
+from .selection import validate_thresholds, validate_metrics, retention_violations, improves
 
 
 def collate(rows, pad_id, device):
@@ -119,8 +120,20 @@ def main():
     p.add_argument('--stop-after-step', type=int, help='Save and stop at this optimizer step; resume with the same recipe')
     p.add_argument('--threads', type=int, default=4)
     p.add_argument('--resume', action='store_true', help='Resume this output/latest.pt (trusted local checkpoint only)')
+    p.add_argument('--selection-metric', default='macro_ce', choices=['macro_ce', 'constrained_typed'],
+                   help='Metric for checkpoint selection: macro_ce or constrained_typed')
+    p.add_argument('--max-global-drop', type=float, default=0.005,
+                   help='Max allowed decline in global retention accuracy (default: 0.005 = 0.5 pp)')
+    p.add_argument('--max-family-drop', type=float, default=0.010,
+                   help='Max allowed decline in each retention family accuracy (default: 0.010 = 1.0 pp)')
+    p.add_argument('--max-score-mae-increase', type=float, default=0.05,
+                   help='Max allowed increase in score ordinal MAE (default: 0.05)')
     p.add_argument('--validate-only', action='store_true', help='Audit and tokenize, no forward/backward')
+    p.add_argument('--wandb', action='store_true', help='Log training curves to Weights & Biases (optional)')
+    p.add_argument('--wandb-project', default='arbiter', help='Weights & Biases project name (default: arbiter)')
+    p.add_argument('--wandb-run-name', default=None, help='Weights & Biases run name')
     a = p.parse_args()
+    validate_thresholds(a.max_global_drop, a.max_family_drop, a.max_score_mae_increase)
     if a.deterministic:
         os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
         torch.use_deterministic_algorithms(True)
@@ -184,29 +197,98 @@ def main():
                                                 max(0., (total_steps-s)/max(1, total_steps-warmup)) if s >= warmup
                                                 else (s+1)/warmup)
     step, start_epoch, next_window, best = 0, 0, 0, float('inf')
+    best_typed_acc = -1.0
+    best_typed_ce = float('inf')
+    base_metrics = None
     if a.resume:
         saved = torch.load(a.output/'latest.pt', map_location='cpu', weights_only=False)
         model.load_state_dict(saved['model'])
         optimizer.load_state_dict(saved['optimizer'])
         scheduler.load_state_dict(saved['scheduler'])
         step, start_epoch, next_window, best = (saved[k] for k in ('step','epoch','next_window','best'))
+        best_typed_acc = saved.get('best_typed_acc', -1.0)
+        best_typed_ce = saved.get('best_typed_ce', float('inf'))
+        base_metrics = saved.get('base_metrics', None)
         torch.set_rng_state(saved['rng'])
         if device.type == 'cuda':
             torch.cuda.set_rng_state_all(saved['cuda_rng'])
     writer = SummaryWriter(str(a.output/'tensorboard'), purge_step=step+1 if a.resume else None)
+    if a.wandb:
+        try:
+            import wandb
+            wandb.init(
+                project=a.wandb_project,
+                name=a.wandb_run_name or a.output.name,
+                config=config,
+            )
+        except ImportError:
+            p.error("Weights & Biases logging requested (--wandb), but 'wandb' is not installed. Install via 'pip install wandb'.")
     def validate():
-        nonlocal best
+        nonlocal best, best_typed_acc, best_typed_ce, base_metrics
         result = evaluate(model, val, a.batch_size, device)
         for family, values in result['families'].items():
             for metric, value in values.items():
                 if value is not None:
                     writer.add_scalar(f'Validation/{family}/{metric}', value, step)
         writer.add_scalar('Validation/macro_ce', result['macro_ce'], step)
+
+        typed_n = sum(v['n'] for k, v in result['families'].items() if k.startswith('typed/'))
+        typed_acc = (sum(v['n'] * v['accuracy'] for k, v in result['families'].items() if k.startswith('typed/')) / typed_n) if typed_n else None
+        typed_ce = (sum(v['n'] * v['ce'] for k, v in result['families'].items() if k.startswith('typed/')) / typed_n) if typed_n else None
+
+        ret_n = sum(v['n'] for k, v in result['families'].items() if k.startswith('retention/') and v['accuracy'] is not None and k != 'retention/score')
+        ret_acc = (sum(v['n'] * v['accuracy'] for k, v in result['families'].items() if k.startswith('retention/') and v['accuracy'] is not None and k != 'retention/score') / ret_n) if ret_n else None
+
+        if typed_acc is not None:
+            writer.add_scalar('Validation/Typed_Accuracy', typed_acc, step)
+        if ret_acc is not None:
+            writer.add_scalar('Validation/Retention_Accuracy', ret_acc, step)
+
+        if a.wandb:
+            wb_data = {f'Validation/{family}/{metric}': value for family, values in result['families'].items() for metric, value in values.items() if value is not None}
+            wb_data['Validation/macro_ce'] = result['macro_ce']
+            if typed_acc is not None:
+                wb_data['Validation/Typed_Accuracy'] = typed_acc
+            if ret_acc is not None:
+                wb_data['Validation/Retention_Accuracy'] = ret_acc
+            wandb.log(wb_data, step=step)
+
+        record = {'step': step, **result, 'typed_acc': typed_acc, 'typed_ce': typed_ce, 'retention_acc': ret_acc}
         with (a.output/'validation.jsonl').open('a') as f:
-            f.write(json.dumps({'step': step, **result})+'\n')
-        if result['macro_ce'] < best:
-            best = result['macro_ce']
-            export(model, a.output/'best')
+            f.write(json.dumps(record)+'\n')
+
+        if a.selection_metric == 'macro_ce':
+            if result['macro_ce'] < best:
+                best = result['macro_ce']
+                export(model, a.output/'best')
+        elif a.selection_metric == 'constrained_typed':
+            validate_metrics(record)
+            if base_metrics is None:
+                base_metrics = {
+                    'families': {k: dict(v) for k, v in result['families'].items()},
+                    'typed_acc': typed_acc,
+                    'typed_ce': typed_ce,
+                    'retention_acc': ret_acc,
+                }
+                best_typed_acc = typed_acc if typed_acc is not None else -1.0
+                best_typed_ce = typed_ce if typed_ce is not None else float('inf')
+                export(model, a.output/'best')
+                print(f"[Selection Step 0 Baseline] Typed Acc: {best_typed_acc*100:.2f}%, Retention Acc: {ret_acc*100:.2f}%. Saved as baseline package.", flush=True)
+            else:
+                violations = retention_violations(base_metrics, record,
+                    a.max_global_drop, a.max_family_drop, a.max_score_mae_increase)
+
+                if not violations:
+                    is_better = improves(typed_acc, typed_ce, best_typed_acc, best_typed_ce)
+                    if is_better:
+                        print(f"[Selection Step {step}] NEW BEST! Typed Acc: {best_typed_acc*100:.2f}% -> {typed_acc*100:.2f}% (CE: {typed_ce:.4f}). Retention constraints passed.", flush=True)
+                        best_typed_acc = typed_acc
+                        best_typed_ce = typed_ce
+                        export(model, a.output/'best')
+                    else:
+                        print(f"[Selection Step {step}] Retention passed, but Typed Acc ({typed_acc*100:.2f}%) did not exceed best ({best_typed_acc*100:.2f}%).", flush=True)
+                else:
+                    print(f"[Selection Step {step}] Retention constraint violated: {'; '.join(violations[:2])}", flush=True)
     if not a.resume:
         validate()  # Includes step-zero baseline, which may remain best.
     try:
@@ -239,11 +321,20 @@ def main():
                         writer.add_scalar(key, value, step)
                     writer.add_scalar('Gradient/clip_scale', min(1., a.clip/(vals[2]+1e-6)), step)
                     writer.add_scalar('LR/backbone', optimizer.param_groups[0]['lr'], step)
+                    if a.wandb:
+                        wandb.log({
+                            'Loss/CE': vals[0],
+                            'Loss/Ordinal_MAE': vals[1],
+                            'Gradient/pre_clip_norm': vals[2],
+                            'Gradient/clip_scale': min(1., a.clip/(vals[2]+1e-6)),
+                            'LR/backbone': optimizer.param_groups[0]['lr'],
+                        }, step=step)
                 stop_requested = a.stop_after_step is not None and step >= a.stop_after_step
                 if step % a.eval_every == 0 or offset+window_size >= len(order) or stop_requested:
                     validate()
                     atomic_checkpoint(a.output/'latest.pt', dict(model=model.state_dict(), optimizer=optimizer.state_dict(),
                         scheduler=scheduler.state_dict(), epoch=epoch, next_window=offset+window_size, step=step, best=best,
+                        best_typed_acc=best_typed_acc, best_typed_ce=best_typed_ce, base_metrics=base_metrics,
                         rng=torch.get_rng_state(), cuda_rng=torch.cuda.get_rng_state_all() if device.type=='cuda' else []))
                     writer.flush()
                     print(f'Step {step}/{total_steps}: validation and checkpoint saved.', flush=True)
@@ -252,6 +343,8 @@ def main():
                         return
     finally:
         writer.close()
+        if a.wandb:
+            wandb.finish()
         if device.type == 'cuda':
             torch.cuda.synchronize(device)
         telemetry = {'step': step, 'elapsed_seconds': time.perf_counter()-started,
