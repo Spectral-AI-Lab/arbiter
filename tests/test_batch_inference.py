@@ -124,7 +124,14 @@ def test_result_tie_and_ordinal_index_contract():
 @pytest.mark.parametrize('path',['missing/remote','checkpoints/arbiter-272m'])
 def test_loader_rejects_unsupported_keywords_before_loading(path):
     with pytest.raises(TypeError,match='Unsupported loading arguments'):
-        ArbiterModel.from_pretrained(path,device_map='auto')
+        ArbiterModel.from_pretrained(path,unsupported_flag='invalid')
+
+
+def test_loader_accepts_device_map_auto():
+    path = Path(__file__).resolve().parents[1] / 'checkpoints/arbiter-272m'
+    model = ArbiterModel.from_pretrained(path, device_map='auto', local_files_only=True)
+    assert model is not None
+    assert isinstance(model, ArbiterModel)
 
 
 def test_loader_rejects_hub_options_on_local_path():

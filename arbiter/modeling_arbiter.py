@@ -155,11 +155,32 @@ class ArbiterModel(PreTrainedModel):
         """
         Load ARBITER from local directory or Hugging Face Hub repo.
         """
+        # Handle device_map gracefully for Hugging Face ergonomics
+        device_map = kwargs.pop("device_map", None)
+        if device_map is not None:
+            logger.info(
+                "ARBITER is a compact 272M parameter single-device model. "
+                "Interpreting device_map=%r as single-device placement.",
+                device_map,
+            )
+            if device is None:
+                if str(device_map).lower() in ("auto", "balanced", "cuda"):
+                    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+                elif str(device_map).lower() == "cpu":
+                    device = "cpu"
+                elif isinstance(device_map, str) and device_map.startswith("cuda"):
+                    device = device_map
+                elif isinstance(device_map, dict):
+                    val = next(iter(device_map.values()), "cpu")
+                    device = f"cuda:{val}" if isinstance(val, int) else str(val)
+                else:
+                    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
         hub_options = {"revision", "cache_dir", "token", "force_download"}
         unsupported = set(kwargs) - hub_options
         if unsupported:
             raise TypeError(f"Unsupported loading arguments: {sorted(unsupported)}. "
-                            "Use device for single-device placement; device_map is not supported.")
+                            "Use device or device_map for device placement.")
         model_path_str = str(pretrained_model_name_or_path)
         model_path = Path(model_path_str)
 
@@ -203,7 +224,7 @@ class ArbiterModel(PreTrainedModel):
             elif str(cfg_dt).replace("torch.", "").lower() in ("float32", "fp32"):
                 target_dtype = torch.float32
             else:
-                target_dtype = torch.bfloat16
+                raise ValueError(f"Unsupported dtype in config: {cfg_dt!r}")
         elif isinstance(dtype_arg, torch.dtype):
             target_dtype = dtype_arg
         elif isinstance(dtype_arg, str):
@@ -231,11 +252,13 @@ class ArbiterModel(PreTrainedModel):
         if safetensors_path.exists():
             state_dict = load_safetensors_file(str(safetensors_path))
         elif pt_path.exists():
-            ckpt = torch.load(str(pt_path), map_location="cpu")
+            ckpt = torch.load(str(pt_path), map_location="cpu", weights_only=True)
             state_dict = ckpt.get("model_state_dict", ckpt)
         else:
             # Fallback search for any .safetensors in directory
             st_files = list(model_path.glob("*.safetensors"))
+            if len(st_files) > 1:
+                raise ValueError("Ambiguous weights: provide a single model.safetensors file; sharded packages are not supported.")
             if st_files:
                 state_dict = load_safetensors_file(str(st_files[0]))
             else:
