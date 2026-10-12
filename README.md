@@ -48,37 +48,19 @@ Requires Python >=3.11, PyTorch >=2.0, Transformers >=5.19 and safetensors >=0.4
 The tested environment is recorded in [development instructions](CONTRIBUTING.md).
 Install a CUDA-enabled PyTorch build to use a GPU; the first example also runs on CPU.
 
-### Obtain the weights
-
-Git contains the code, configuration and tokenizer, **not the model weights**.
-Place the complete release package in `checkpoints/arbiter-272m/` before running
-local examples. It must contain `model.safetensors`, `config.json`, `tokenizer.json`
-and `tokenizer_config.json` from the same release.
-
-Once you have access to the HF release, download it using its exact commit:
-
-```bash
-hf download spectral-ai-lab/arbiter-272m --revision <release-commit> --local-dir checkpoints/arbiter-272m
-```
-
-Replace `<release-commit>` with the published release SHA. This repository does not
-yet record an accessible public release revision; a private repository requires
-`hf auth login` and access. A 404 can mean unavailable or unauthorized weights.
-After downloading the complete package, local inference requires no network access.
-The library wheel contains inference only; fine-tuning and benchmark commands below
-run from this Git checkout.
-
 ---
 
 ## Quickstart
 
 ### 1. High-Level Decision (`model.decide`)
 
+ARBITER models load directly from Hugging Face Hub (automatically downloaded and cached):
+
 ```python
 from arbiter import ArbiterModel
 
-# Load the official 272M model in native BF16 from the local checkpoint
-model = ArbiterModel.from_pretrained("checkpoints/arbiter-272m", device="cpu", local_files_only=True)
+# Automatically downloads and caches from Hugging Face Hub
+model = ArbiterModel.from_pretrained("spectral-ai-lab/arbiter-272m", device="cuda:0")  # or "cpu"
 
 # Route a customer support ticket to the appropriate service
 result = model.decide(

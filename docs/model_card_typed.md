@@ -71,23 +71,30 @@ A subsequent check on 2,500 retention development decisions passed the proposed 
 
 See the GitHub repository's `finetuning/TYPED_SPECIALIST.md` for dataset preparation, training, TensorBoard and evaluation commands. `reproduction.json` records the original environment, configuration and hashes. Re-running on another environment need not reproduce identical floating-point outputs or exactly 76.45%.
 
-## Usage
+## Quickstart
 
-Install the ARBITER package from https://github.com/spectral-ai-lab/arbiter, then download this repository to a local directory. The package provides the custom loader; this release is not a standard Transformers text-classification pipeline.
+### Installation
+
+```bash
+pip install spectral-arbiter
+```
+
+### Usage
 
 ```python
-from huggingface_hub import snapshot_download
 from arbiter import ArbiterModel
 
-path = snapshot_download("spectral-ai-lab/arbiter-272m-typed")
-model = ArbiterModel.from_pretrained(path, device="cpu", local_files_only=True)
+# Load directly from Hugging Face Hub (automatic download & caching)
+model = ArbiterModel.from_pretrained("spectral-ai-lab/arbiter-272m-typed", device="cuda:0")  # or "cpu"
+
 result = model.decide(
     context="The customer was charged twice for the same order.",
     instruction="Which team should handle this issue?",
     criteria={"payments": "Incorrect or duplicate payments", "access": "Account access problems"},
     question_type="choice",
 )
-print(result)
+
+print(f"Selected: {result['selected_key']} ({result['confidence']:.2%})")
 ```
 
 Expected semantic answer for this illustration: `payments`; it is not an additional benchmark result. Native batching uses the same API as ARBITER Base.

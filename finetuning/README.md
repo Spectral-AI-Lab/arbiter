@@ -25,15 +25,11 @@ python -c "import torch; print('CUDA available:', torch.cuda.is_available()); pr
 ```
 
 The base model package must be in `checkpoints/arbiter-272m/` and include the weights,
-configuration and tokenizer. If you have not downloaded it yet:
+configuration and tokenizer. To download it to the local checkpoint directory:
 
 ```bash
-hf download spectral-ai-lab/arbiter-272m --revision <release-commit> --local-dir checkpoints/arbiter-272m
+hf download spectral-ai-lab/arbiter-272m --local-dir checkpoints/arbiter-272m
 ```
-
-Replace `<release-commit>` with the release SHA when the weights are accessible.
-See [weight availability](../README.md#obtain-the-weights); access is required for a private release.
-Do not download over the base directory of an active training run.
 
 ## 2. Configuration presets
 
