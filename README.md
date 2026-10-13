@@ -1,5 +1,9 @@
 # ARBITER: Attentive Relational Bidirectional Impartial Typed Encoder for Reasoning
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb)
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-yellow)](https://huggingface.co/spectral-ai-lab/arbiter-272m)
+[![PyPI](https://img.shields.io/pypi/v/spectral-arbiter?color=blue&logo=pypi)](https://pypi.org/project/spectral-arbiter/)
+[![Docker](https://img.shields.io/badge/Docker-Online%20Serving-blue?logo=docker)](docs/serving.md)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Weights License](https://img.shields.io/badge/Weights_License-Gemma_Terms_of_Use-green.svg)](https://ai.google.dev/gemma/terms)
 [![Model Size](https://img.shields.io/badge/Model_Size-272M_Parameters-orange.svg)](#)
@@ -8,12 +12,6 @@
 **ARBITER** is a compact encoder by **Spectral AI Lab** (*Where intelligence emerges*), designed for **decision-making, routing, and relational structured reasoning** in autonomous AI agents and enterprise production systems.
 
 Built upon the **ARBITER** relational architecture (Inter-Candidate Set-Attention & Dynamic HyperFiLM Modulation), ARBITER jointly encodes context, instructions, and candidate options, allowing competing choices to attend to one another rather than being evaluated in isolation.
-
-## Try ARBITER in your browser
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb)
-
-Try Base or Typed with ready-to-run examples for choices, boolean decisions, ordinal scores, and native batching. Expected answers are shown alongside predictions. Open Colab, connect to a runtime, then select **Runtime → Run all**. The notebook installs the package and downloads the model from Hugging Face; no local setup is needed.
 
 ---
 
