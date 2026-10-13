@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spectral-arbiter"
-version = "1.1.0"
+version = "1.1.1"
 description = "ARBITER: Attentive Relational Bidirectional Impartial Typed Encoder for Reasoning"
 readme = "README.md"
 requires-python = ">=3.11"

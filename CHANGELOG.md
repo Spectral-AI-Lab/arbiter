@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1] - 2026-10-13
+
+- Declare `arbiter` console script CLI entrypoint in `pyproject.toml` (`arbiter serve`).
+- Add `arbiter/cli.py` with serving delegation and graceful error messages for missing dependencies.
+- Add defensive imports in `configuration_arbiter.py` and `modeling_arbiter.py` for older `transformers` runtimes.
+- Support official custom `notebook.ipynb` directly in Hugging Face repository for 1-click Colab execution.
+- Update Docker commands across documentation to explicitly specify `--model`.
+
 ## [1.1.0] - 2026-10-13
 
 - Add online serving layer `arbiter.serve` with FastAPI and vLLM-compatible `/v1/systemone` adapter.
