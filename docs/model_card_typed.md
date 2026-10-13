@@ -23,20 +23,6 @@ datasets:
 
 </div>
 
----
-
-### ⚡ Quick Launch Options
-
-| Method | Command / Link | Description |
-| :--- | :--- | :--- |
-| 🚀 **Google Colab** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb) | 1-click interactive demo in browser (no local setup) |
-| 🐳 **Docker (GPU)** | `docker run --gpus all -p 8000:8000 ghcr.io/spectral-ai-lab/arbiter-serve:latest --model spectral-ai-lab/arbiter-272m-typed` | One-line production serving (vLLM / OpenAI compatible) |
-| 🐳 **Docker (CPU)** | `docker run -p 8000:8000 ghcr.io/spectral-ai-lab/arbiter-serve:cpu --model spectral-ai-lab/arbiter-272m-typed` | Lightweight CPU container |
-| 🐍 **Python / PyPI** | `pip install "spectral-arbiter[serve]"` | Official library (`arbiter`) & CLI (`arbiter serve`) |
-| 🤗 **Transformers** | `AutoModel.from_pretrained(..., trust_remote_code=True)` | Direct native HF loading with remote code |
-
----
-
 **A lightweight Typed Decisions specialist: 76.45% accuracy, up from 65.50% for ARBITER Base, with broadly retained routing and classification performance.**
 
 This model fine-tunes [ARBITER-272M](https://huggingface.co/spectral-ai-lab/arbiter-272m) on Typed Decisions. It supports categorical `choice`, boolean `noul` and ordinal `score` requests using the same ARBITER API and architecture. It jointly encodes context, instruction and options; it is not a generative chat model.
@@ -96,6 +82,16 @@ A subsequent check on 2,500 retention development decisions passed the proposed 
 See the GitHub repository's `finetuning/TYPED_SPECIALIST.md` for dataset preparation, training, TensorBoard and evaluation commands. `reproduction.json` records the original environment, configuration and hashes. Re-running on another environment need not reproduce identical floating-point outputs or exactly 76.45%.
 
 ## Quickstart
+
+### ⚡ Quick Launch Options
+
+| Method | Command / Link | Description |
+| :--- | :--- | :--- |
+| 🚀 **Google Colab** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb) | 1-click interactive demo in browser (runs on CPU or GPU) |
+| 🐳 **Docker (GPU)** | `docker run --gpus all -p 8000:8000 ghcr.io/spectral-ai-lab/arbiter-serve:latest --model spectral-ai-lab/arbiter-272m-typed` | One-line production serving (vLLM / OpenAI compatible) |
+| 🐳 **Docker (CPU)** | `docker run -p 8000:8000 ghcr.io/spectral-ai-lab/arbiter-serve:cpu --model spectral-ai-lab/arbiter-272m-typed` | Lightweight CPU container (no GPU required) |
+| 🐍 **Python / PyPI** | `pip install "spectral-arbiter[serve]"` | Official library (`arbiter`) & CLI (`arbiter serve`) |
+| 🤗 **Transformers** | `AutoModel.from_pretrained(..., trust_remote_code=True)` | Direct native HF loading with remote code |
 
 ### Installation
 
