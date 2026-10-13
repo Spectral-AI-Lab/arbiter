@@ -36,7 +36,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install -e '.[dev,serve]'
+          python -m pip install -e '.[dev,finetuning,benchmark,serve]'
       - name: Run fast unit tests
         run: python -m pytest tests -m 'not integration' -q
       - name: Check documentation integrity
@@ -79,6 +79,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Extract version tag
+        id: meta
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "main" ]; then
+            VERSION="1.1.0"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -97,7 +106,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/spectral-ai-lab/arbiter-serve:cpu
-            ghcr.io/spectral-ai-lab/arbiter-serve:1.0.0-cpu
+            ghcr.io/spectral-ai-lab/arbiter-serve:${{ steps.meta.outputs.version }}-cpu
 
       - name: Build and push GPU image
         uses: docker/build-push-action@v5
@@ -108,4 +117,4 @@ jobs:
           tags: |
             ghcr.io/spectral-ai-lab/arbiter-serve:gpu
             ghcr.io/spectral-ai-lab/arbiter-serve:latest
-            ghcr.io/spectral-ai-lab/arbiter-serve:1.0.0-gpu
+            ghcr.io/spectral-ai-lab/arbiter-serve:${{ steps.meta.outputs.version }}-gpu
