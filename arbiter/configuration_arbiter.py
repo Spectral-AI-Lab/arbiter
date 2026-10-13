@@ -3,7 +3,14 @@ from __future__ import annotations
 
 from typing import Any
 from transformers import PretrainedConfig
-from transformers.models.embedding_gemma2.configuration_embedding_gemma2 import EmbeddingGemma2TextConfig
+
+try:
+    from transformers.models.embedding_gemma2.configuration_embedding_gemma2 import EmbeddingGemma2TextConfig
+except ImportError:
+    try:
+        from transformers import EmbeddingGemma2TextConfig
+    except ImportError:
+        EmbeddingGemma2TextConfig = PretrainedConfig
 
 
 class ArbiterConfig(PretrainedConfig):

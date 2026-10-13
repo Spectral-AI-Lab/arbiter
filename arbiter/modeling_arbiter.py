@@ -16,7 +16,14 @@ import torch
 import torch.nn as nn
 from safetensors.torch import load_file as load_safetensors_file
 from transformers import PreTrainedModel, AutoTokenizer
-from transformers.models.embedding_gemma2.modeling_embedding_gemma2 import EmbeddingGemma2TextModel
+
+try:
+    from transformers.models.embedding_gemma2.modeling_embedding_gemma2 import EmbeddingGemma2TextModel
+except ImportError:
+    try:
+        from transformers import EmbeddingGemma2TextModel
+    except ImportError:
+        EmbeddingGemma2TextModel = None
 
 try:
     from .configuration_arbiter import ArbiterConfig
@@ -126,6 +133,16 @@ class ArbiterModel(PreTrainedModel):
         super().__init__(config)
         self.config = config
 
+        if EmbeddingGemma2TextModel is None:
+            raise ImportError(
+                "ARBITER requires transformers>=5.19.0 (with EmbeddingGemma2 support).\n"
+                "Your current environment has an older version of transformers without EmbeddingGemma2.\n"
+                "To resolve this, please upgrade transformers:\n"
+                "    pip install --upgrade 'transformers>=5.19.0'\n"
+                "or install the official spectral-arbiter package:\n"
+                "    pip install --upgrade spectral-arbiter"
+            )
+
         # Instantiate language model directly from config without downloading Google weights
         text_config = config.get_text_config()
         text_config.vocab_size = config.vocab_size
@@ -179,8 +196,9 @@ class ArbiterModel(PreTrainedModel):
                 else:
                     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-        hub_options = {"revision", "cache_dir", "token", "force_download"}
-        hf_internal_kwargs = {"trust_remote_code", "config", "adapter_kwargs", "code_revision"}
+        hub_options = {"revision", "cache_dir", "token", "force_download", "local_files_only"}
+        hf_internal_kwargs = {"trust_remote_code", "config", "adapter_kwargs", "code_revision", "proxies"}
+        kwargs = {k: v for k, v in kwargs.items() if not k.startswith("_")}
         for k in hf_internal_kwargs:
             kwargs.pop(k, None)
         unsupported = set(kwargs) - hub_options
@@ -190,8 +208,10 @@ class ArbiterModel(PreTrainedModel):
         model_path_str = str(pretrained_model_name_or_path)
         model_path = Path(model_path_str)
 
-        if model_path.exists() and kwargs:
-            raise TypeError("Hub download arguments apply only to remote repositories, not local paths.")
+        if model_path.exists():
+            for k in list(kwargs):
+                if k in hub_options:
+                    kwargs.pop(k)
 
         # Resolve remote repo if path does not exist locally
         if not model_path.exists():
