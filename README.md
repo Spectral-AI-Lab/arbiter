@@ -128,6 +128,19 @@ print(results["answers"])
 
 ARBITER includes a high-performance asynchronous microservice supporting the official [vLLM Structured Decisions specification (`POST /v1/systemone`)](https://docs.vllm.ai/en/latest/serving/online_serving/structured_decisions/) with dynamic micro-batching:
 
+### Local Launch with Python CLI
+
+```bash
+# Install serving extras
+pip install "spectral-arbiter[serve]"
+
+# Start server via arbiter CLI command
+arbiter serve --port 8000 --device cuda:0
+
+# Or via Python module
+python -m arbiter.serve --port 8000 --device cuda:0
+```
+
 ### One-Line Launch with Docker / Podman
 
 Run directly from **GitHub Container Registry** with zero installation:
@@ -136,12 +149,14 @@ Run directly from **GitHub Container Registry** with zero installation:
 # GPU (Recommended, NVIDIA CUDA 12, Blackwell / RTX 5090 ready)
 docker run --gpus all -d -p 8000:8000 \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
-  ghcr.io/spectral-ai-lab/arbiter-serve:latest
+  ghcr.io/spectral-ai-lab/arbiter-serve:latest \
+  --model spectral-ai-lab/arbiter-272m
 
 # CPU
 docker run -d -p 8000:8000 \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
-  ghcr.io/spectral-ai-lab/arbiter-serve:cpu
+  ghcr.io/spectral-ai-lab/arbiter-serve:cpu \
+  --model spectral-ai-lab/arbiter-272m
 ```
 
 ### Quick Verification

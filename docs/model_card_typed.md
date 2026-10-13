@@ -90,7 +90,7 @@ See the GitHub repository's `finetuning/TYPED_SPECIALIST.md` for dataset prepara
 | 🚀 **Google Colab** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb) | 1-click interactive demo in browser (runs on CPU or GPU) |
 | 🐳 **Docker (GPU)** | `docker run --gpus all -p 8000:8000 ghcr.io/spectral-ai-lab/arbiter-serve:latest --model spectral-ai-lab/arbiter-272m-typed` | One-line production serving (vLLM / OpenAI compatible) |
 | 🐳 **Docker (CPU)** | `docker run -p 8000:8000 ghcr.io/spectral-ai-lab/arbiter-serve:cpu --model spectral-ai-lab/arbiter-272m-typed` | Lightweight CPU container (no GPU required) |
-| 🐍 **Python / PyPI** | `pip install "spectral-arbiter[serve]"` | Official library (`arbiter`) & CLI (`arbiter serve`) |
+| 🐍 **Python / PyPI** | `pip install "spectral-arbiter[serve]"` | Official library (`arbiter`) & CLI (`arbiter serve` / `python -m arbiter.serve`) |
 | 🤗 **Transformers** | `AutoModel.from_pretrained(..., trust_remote_code=True)` | Direct native HF loading with remote code |
 
 ### Installation
@@ -127,8 +127,21 @@ from transformers import AutoModel
 model = AutoModel.from_pretrained("spectral-ai-lab/arbiter-272m-typed", trust_remote_code=True)
 ```
 
-### Docker & Online Serving (vLLM Compatible)
+### Online Serving (CLI & Docker, vLLM Compatible)
 
+#### Via Python CLI
+```bash
+# Install serving extras
+pip install "spectral-arbiter[serve]"
+
+# Start server via CLI
+arbiter serve --port 8000 --model spectral-ai-lab/arbiter-272m-typed
+
+# Or via Python module
+python -m arbiter.serve --port 8000 --model spectral-ai-lab/arbiter-272m-typed
+```
+
+#### Via Docker
 Deploy the Typed specialist with zero local setup using the official container image:
 
 ```bash

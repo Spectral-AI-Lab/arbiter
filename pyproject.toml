@@ -18,6 +18,10 @@ dependencies = [
     "transformers>=5.19.0",
     "safetensors>=0.4.0",
 ]
+
+[project.scripts]
+arbiter = "arbiter.cli:main"
+
 [project.optional-dependencies]
 finetuning = [
     "datasets>=3.0.0",

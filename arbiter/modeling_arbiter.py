@@ -208,6 +208,10 @@ class ArbiterModel(PreTrainedModel):
         model_path_str = str(pretrained_model_name_or_path)
         model_path = Path(model_path_str)
 
+        hub_remote_only = {"revision", "token", "force_download"}
+        if model_path.exists() and any(k in kwargs for k in hub_remote_only):
+            raise TypeError("Hub download arguments apply only to remote repositories, not local paths.")
+
         if model_path.exists():
             for k in list(kwargs):
                 if k in hub_options:

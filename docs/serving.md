@@ -94,12 +94,18 @@ pip install "spectral-arbiter[serve]"
 
 ### 2. Launch Local Server
 
+You can launch the server using either the `arbiter` CLI command or the Python module:
+
 ```bash
-# Launch with GPU
+# Launch with GPU (CLI command)
+arbiter serve --port 8000 --device cuda:0 --batch-window 8.0
+
+# Launch with GPU (Python module)
 python -m arbiter.serve --port 8000 --device cuda:0 --batch-window 8.0
 
 # Launch with CPU
-python -m arbiter.serve --port 8000 --device cpu --batch-window 0.0
+arbiter serve --port 8000 --device cpu --batch-window 0.0
+# (or: python -m arbiter.serve --port 8000 --device cpu --batch-window 0.0)
 ```
 
 CLI options:

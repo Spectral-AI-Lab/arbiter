@@ -16,7 +16,7 @@ from .app import create_app
 logger = logging.getLogger("arbiter.serve")
 
 
-def main():
+def main(argv: list[str] | None = None):
     default_model = os.environ.get("ARBITER_MODEL_PATH", "spectral-ai-lab/arbiter-272m")
     default_device = os.environ.get("ARBITER_DEVICE", "auto")
 
@@ -32,7 +32,7 @@ def main():
     parser.add_argument("--max-attention-elements", type=int, default=16777216, help="Max attention elements per forward batch (default: 16777216)")
     parser.add_argument("--max-queue-size", type=int, default=1024, help="Maximum pending queue depth")
     parser.add_argument("--log-level", type=str, default="info", help="Logging level")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     device = args.device
     if device == "auto":
