@@ -51,7 +51,4 @@ class ArbiterConfig(PretrainedConfig):
     def get_text_config(self, decoder: bool = False, **kwargs) -> EmbeddingGemma2TextConfig:
         if self.text_config:
             return EmbeddingGemma2TextConfig(**self.text_config)
-        raise ValueError(
-            "text_config dictionary is missing from ArbiterConfig. "
-            "ARBITER requires self-contained offline text_config for fully autonomous initialization."
-        )
+        return EmbeddingGemma2TextConfig()

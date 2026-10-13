@@ -18,7 +18,10 @@ from safetensors.torch import load_file as load_safetensors_file
 from transformers import PreTrainedModel, AutoTokenizer
 from transformers.models.embedding_gemma2.modeling_embedding_gemma2 import EmbeddingGemma2TextModel
 
-from .configuration_arbiter import ArbiterConfig
+try:
+    from .configuration_arbiter import ArbiterConfig
+except (ImportError, ValueError):
+    from configuration_arbiter import ArbiterConfig
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +180,9 @@ class ArbiterModel(PreTrainedModel):
                     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
         hub_options = {"revision", "cache_dir", "token", "force_download"}
+        hf_internal_kwargs = {"trust_remote_code", "config", "adapter_kwargs", "code_revision"}
+        for k in hf_internal_kwargs:
+            kwargs.pop(k, None)
         unsupported = set(kwargs) - hub_options
         if unsupported:
             raise TypeError(f"Unsupported loading arguments: {sorted(unsupported)}. "

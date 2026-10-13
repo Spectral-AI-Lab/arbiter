@@ -1,5 +1,7 @@
 ---
 license: gemma
+library_name: transformers
+pipeline_tag: text-classification
 base_model: spectral-ai-lab/arbiter-272m
 base_model_relation: finetune
 tags:
@@ -13,9 +15,28 @@ datasets:
 ---
 # ARBITER-272M-Typed
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb) [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?logo=github)](https://github.com/Spectral-AI-Lab/arbiter)
+<div align="center">
 
-Try ARBITER in your browser with installation, ready-to-run examples, and expected answers. Select `spectral-ai-lab/arbiter-272m-typed` in the model selection cell, then run the notebook.
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?logo=github)](https://github.com/Spectral-AI-Lab/arbiter)
+[![Docker Image](https://img.shields.io/badge/Docker-GHCR%20Images-blue?logo=docker)](https://github.com/Spectral-AI-Lab/arbiter/pkgs/container/arbiter-serve)
+[![PyPI](https://img.shields.io/pypi/v/spectral-arbiter?color=blue&logo=pypi)](https://pypi.org/project/spectral-arbiter/)
+
+</div>
+
+---
+
+### ⚡ Quick Launch Options
+
+| Method | Command / Link | Description |
+| :--- | :--- | :--- |
+| 🚀 **Google Colab** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb) | 1-click interactive demo in browser (no local setup) |
+| 🐳 **Docker (GPU)** | `docker run --gpus all -p 8000:8000 ghcr.io/spectral-ai-lab/arbiter-serve:latest --model spectral-ai-lab/arbiter-272m-typed` | One-line production serving (vLLM / OpenAI compatible) |
+| 🐳 **Docker (CPU)** | `docker run -p 8000:8000 ghcr.io/spectral-ai-lab/arbiter-serve:cpu --model spectral-ai-lab/arbiter-272m-typed` | Lightweight CPU container |
+| 🐍 **Python / PyPI** | `pip install "spectral-arbiter[serve]"` | Official library (`arbiter`) & CLI (`arbiter serve`) |
+| 🤗 **Transformers** | `AutoModel.from_pretrained(..., trust_remote_code=True)` | Direct native HF loading with remote code |
+
+---
 
 **A lightweight Typed Decisions specialist: 76.45% accuracy, up from 65.50% for ARBITER Base, with broadly retained routing and classification performance.**
 
@@ -102,6 +123,14 @@ print(f"Selected: {result['selected_key']} ({result['confidence']:.2%})")
 ```
 
 Expected semantic answer for this illustration: `payments`; it is not an additional benchmark result. Native batching uses the same API as ARBITER Base.
+
+*(You can also load directly via Hugging Face `transformers` using `trust_remote_code=True`:)*
+
+```python
+from transformers import AutoModel
+
+model = AutoModel.from_pretrained("spectral-ai-lab/arbiter-272m-typed", trust_remote_code=True)
+```
 
 ### Docker & Online Serving (vLLM Compatible)
 

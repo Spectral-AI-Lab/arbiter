@@ -85,6 +85,14 @@ print("Confidence          :", f"{result['confidence']:.2%}")
 print("Class Probabilities :", result["probabilities"])
 ```
 
+*(You can also load directly via Hugging Face `transformers` using `trust_remote_code=True`:)*
+
+```python
+from transformers import AutoModel
+
+model = AutoModel.from_pretrained("spectral-ai-lab/arbiter-272m", trust_remote_code=True)
+```
+
 ### 2. Multi-Question Dictionary Interface (`model.predict`)
 
 ARBITER natively integrates into agent loops and multi-step evaluation pipelines:
