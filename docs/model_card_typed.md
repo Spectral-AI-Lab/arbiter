@@ -1,7 +1,6 @@
 ---
 license: gemma
 library_name: transformers
-pipeline_tag: text-classification
 base_model: spectral-ai-lab/arbiter-272m
 base_model_relation: finetune
 tags:
