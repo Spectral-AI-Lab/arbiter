@@ -564,8 +564,11 @@ class ArbiterModel(PreTrainedModel):
         prepared = []
         for i, request in enumerate(requests):
             try:
-                item = self._prepare_decision(**dict(
-                    dict(max_length=max_length, allow_truncation=allow_truncation), **request))
+                if "_prepared" in request:
+                    item = request["_prepared"]
+                else:
+                    item = self._prepare_decision(**dict(
+                        dict(max_length=max_length, allow_truncation=allow_truncation), **request))
                 length = len(item["ids"])
                 if length > max_batch_tokens or length * length > max_attention_elements:
                     raise ValueError("Request exceeds batch budget even as a singleton")
