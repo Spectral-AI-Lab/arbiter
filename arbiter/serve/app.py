@@ -44,42 +44,60 @@ from .scheduler import DynamicBatchScheduler, QueueFullError
 logger = logging.getLogger("arbiter.serve")
 
 
-def get_canonical_model_id(served_id: str) -> str:
-    """Resolve the canonical public Hugging Face model identifier."""
-    name = Path(served_id).name.lower()
-    if "typed" in name or "typed" in served_id.lower():
+def get_canonical_model_id(served_id: str, served_model_name: Optional[str] = None) -> str:
+    """Resolve the canonical model identifier, supporting custom served model names."""
+    if served_model_name:
+        return served_model_name
+    norm = served_id.strip().rstrip("/\\")
+    norm_lower = norm.lower()
+    if norm_lower in {"spectral-ai-lab/arbiter-272m-typed", "arbiter-272m-typed"}:
         return "spectral-ai-lab/arbiter-272m-typed"
-    return "spectral-ai-lab/arbiter-272m"
+    if norm_lower in {"spectral-ai-lab/arbiter-272m", "arbiter-272m"}:
+        return "spectral-ai-lab/arbiter-272m"
+
+    path = Path(served_id)
+    if path.is_dir():
+        if (path / "reproduction.json").exists():
+            return "spectral-ai-lab/arbiter-272m-typed"
+        if "typed" in path.name.lower():
+            return "spectral-ai-lab/arbiter-272m-typed"
+        if "base" in path.name.lower() or "arbiter" in path.name.lower():
+            return "spectral-ai-lab/arbiter-272m"
+        return path.name
+
+    if "typed" in norm_lower:
+        return "spectral-ai-lab/arbiter-272m-typed"
+    if "arbiter" in norm_lower:
+        return "spectral-ai-lab/arbiter-272m"
+
+    return served_id
 
 
-def validate_model_id(requested_model: Optional[str], served_id: str) -> str:
+def validate_model_id(
+    requested_model: Optional[str],
+    served_id: str,
+    served_model_name: Optional[str] = None,
+) -> str:
     """Validate requested model against the actually loaded model and its valid aliases."""
-    canonical_id = get_canonical_model_id(served_id)
+    canonical_id = get_canonical_model_id(served_id, served_model_name)
     if not requested_model:
         return canonical_id
 
-    is_served_typed = "typed" in canonical_id
-
-    if is_served_typed:
-        valid_aliases = {
-            served_id,
-            Path(served_id).name,
-            "spectral-ai-lab/arbiter-272m-typed",
-            "arbiter-272m-typed",
-        }
-    else:
-        valid_aliases = {
-            served_id,
-            Path(served_id).name,
-            "spectral-ai-lab/arbiter-272m",
-            "arbiter-272m",
-            "arbiter",
-        }
+    valid_aliases = {
+        served_id,
+        Path(served_id).name,
+        canonical_id,
+        Path(canonical_id).name,
+    }
+    if canonical_id == "spectral-ai-lab/arbiter-272m-typed":
+        valid_aliases.update({"arbiter-272m-typed", "spectral-ai-lab/arbiter-272m-typed"})
+    elif canonical_id == "spectral-ai-lab/arbiter-272m":
+        valid_aliases.update({"arbiter-272m", "spectral-ai-lab/arbiter-272m", "arbiter"})
 
     if requested_model not in valid_aliases:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Requested model '{requested_model}' does not match served model '{served_id}'.",
+            detail=f"Requested model '{requested_model}' does not match served model '{canonical_id}'.",
         )
     return canonical_id
 
@@ -87,6 +105,7 @@ def validate_model_id(requested_model: Optional[str], served_id: str) -> str:
 def create_app(
     model: Optional[ArbiterModel] = None,
     model_id: str = "spectral-ai-lab/arbiter-272m",
+    served_model_name: Optional[str] = None,
     batch_window_ms: float = 8.0,
     max_batch_size: int = 16,
     max_batch_tokens: int = 8192,
@@ -97,6 +116,7 @@ def create_app(
     metrics = ServingMetrics(max_history=2000)
     loaded_model: Optional[ArbiterModel] = model
     scheduler: Optional[DynamicBatchScheduler] = None
+    effective_served_name = served_model_name or os.environ.get("ARBITER_SERVED_MODEL_NAME")
 
     if loaded_model is not None:
         scheduler = DynamicBatchScheduler(
@@ -113,12 +133,14 @@ def create_app(
     async def lifespan(app: FastAPI):
         nonlocal scheduler, loaded_model
         # If model not provided, load from env or default
+        effective_id = model_id
         if loaded_model is None:
             ckpt_path = os.environ.get("ARBITER_MODEL_PATH", model_id)
             device = os.environ.get("ARBITER_DEVICE", "cuda:0" if torch.cuda.is_available() else "cpu")
             logger.info("Loading ARBITER model from %s on %s...", ckpt_path, device)
             loaded_model = ArbiterModel.from_pretrained(ckpt_path, device=device)
             loaded_model.eval()
+            effective_id = ckpt_path
 
         if scheduler is None:
             scheduler = DynamicBatchScheduler(
@@ -134,7 +156,9 @@ def create_app(
         app.state.scheduler = scheduler
         app.state.model = loaded_model
         app.state.metrics = metrics
-        app.state.model_id = model_id
+        app.state.model_id = effective_id
+        app.state.served_model_name = effective_served_name
+        app.state.canonical_model_id = get_canonical_model_id(effective_id, effective_served_name)
         yield
         await scheduler.stop()
 
@@ -148,6 +172,8 @@ def create_app(
     app.state.model = loaded_model
     app.state.metrics = metrics
     app.state.model_id = model_id
+    app.state.served_model_name = effective_served_name
+    app.state.canonical_model_id = get_canonical_model_id(model_id, effective_served_name)
 
     # Convert validation errors to HTTP 400 per vLLM Structured Decisions specification
     @app.exception_handler(RequestValidationError)
@@ -187,9 +213,12 @@ def create_app(
                 device_str = str(next(loaded_model.parameters()).device)
             except Exception:
                 device_str = "cpu"
+        served_id = app.state.model_id if hasattr(app.state, "model_id") else model_id
+        served_name = getattr(app.state, "served_model_name", None)
+        canonical_id = getattr(app.state, "canonical_model_id", get_canonical_model_id(served_id, served_name))
         return HealthResponse(
             status="healthy",
-            model_id=app.state.model_id if hasattr(app.state, "model_id") else model_id,
+            model_id=canonical_id,
             device=device_str,
             loaded=is_loaded,
             version=__version__,
@@ -208,7 +237,8 @@ def create_app(
             await active_scheduler.start()
 
         served_id = app.state.model_id if hasattr(app.state, "model_id") else model_id
-        canonical_id = validate_model_id(req.model, served_id)
+        served_name = getattr(app.state, "served_model_name", None)
+        canonical_id = validate_model_id(req.model, served_id, served_name)
 
         # Check queue capacity upfront for all questions atomically
         try:

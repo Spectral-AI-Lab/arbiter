@@ -5,6 +5,7 @@ Includes:
 2. Real-weight integration tests (marked with @pytest.mark.integration)
 """
 
+import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,7 @@ from fastapi.testclient import TestClient
 
 from arbiter.modeling_arbiter import ArbiterModel
 from arbiter.serve.app import create_app
+from arbiter.serve.scheduler import DynamicBatchScheduler
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKPOINT_DIR = ROOT / "checkpoints" / "arbiter-272m"
@@ -313,6 +315,96 @@ def test_contract_scheduler_stop_settles_inflight_batch():
 
         # Future must be done (either settled with result or cancelled), NEVER pending
         assert fut.done()
+
+    asyncio.run(_test())
+
+
+def test_contract_custom_served_model_name():
+    """Verify that an explicit served_model_name is returned and accepted, preserving custom IDs."""
+    model = DummyArbiterModel()
+    app = create_app(
+        model=model,
+        model_id="/data/custom/checkpoint",
+        served_model_name="my-org/custom-arbiter",
+    )
+    with TestClient(app) as client:
+        # /health returns the custom served name
+        health = client.get("/health").json()
+        assert health["model_id"] == "my-org/custom-arbiter"
+
+        # Request with exact custom name succeeds
+        req = {
+            "model": "my-org/custom-arbiter",
+            "state": "Context",
+            "questions": {
+                "q1": {"type": "choice", "instructions": "Pick", "criteria": ["A", "B"]}
+            },
+        }
+        resp = client.post("/v1/systemone", json=req)
+        assert resp.status_code == 200
+        assert resp.json()["model"] == "my-org/custom-arbiter"
+
+        # Request with mismatching model rejected with 400
+        bad_req = dict(req, model="other-org/other-model")
+        assert client.post("/v1/systemone", json=bad_req).status_code == 400
+
+
+def test_contract_singleton_overhead_exceeding_max_length_rejected():
+    """Verify that singleton requests whose instruction/options exceed max_length are rejected."""
+    class MockTokenizer:
+        def encode(self, text, add_special_tokens=True):
+            return list(range(100))
+
+        def decode(self, ids, skip_special_tokens=True):
+            return "decoded"
+
+    class DummyModelWithTokenizer:
+        tokenizer = MockTokenizer()
+
+        def _prepare_decision(self, **kwargs):
+            return {"ids": list(range(50))}
+
+    scheduler = DynamicBatchScheduler(
+        model=DummyModelWithTokenizer(),
+        max_batch_tokens=8192,
+        max_attention_elements=16777216,
+    )
+
+    # When max_length is 50, overhead alone is 100 -> must raise ValueError
+    with pytest.raises(ValueError, match="exceeding max_length"):
+        scheduler.submit({
+            "_is_singleton_choice": True,
+            "_singleton_key": "A",
+            "context": "Short",
+            "instruction": "Long instruction",
+            "criteria": {"A": "Option A"},
+            "max_length": 50,
+            "allow_truncation": True,
+        })
+
+
+def test_contract_scheduler_inference_lifecycle_tracking():
+    """Verify that scheduler tracks thread lifecycle via is_inference_active and shuts down cleanly."""
+    model = DummyArbiterModel()
+    scheduler = DynamicBatchScheduler(
+        model=model,
+        batch_window_ms=2.0,
+    )
+    assert not scheduler.is_inference_active
+
+    async def _test():
+        await scheduler.start()
+        fut = scheduler.submit({
+            "context": "Context",
+            "instruction": "Inst",
+            "criteria": ["A", "B"],
+            "question_type": "choice",
+        })
+        res = await fut
+        assert "choice" in res or "selected_key" in res or "probabilities" in res
+        assert not scheduler.is_inference_active
+        await scheduler.stop()
+        assert not scheduler.is_inference_active
 
     asyncio.run(_test())
 

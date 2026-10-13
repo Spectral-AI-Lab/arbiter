@@ -24,6 +24,7 @@ def main():
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host interface to bind")
     parser.add_argument("--port", type=int, default=8000, help="Port to listen on")
     parser.add_argument("--model", type=str, default=default_model, help=f"Local checkpoint or Hub ID (default: {default_model})")
+    parser.add_argument("--served-model-name", type=str, default=os.environ.get("ARBITER_SERVED_MODEL_NAME"), help="Explicit canonical model name returned in API responses")
     parser.add_argument("--device", type=str, default=default_device, help=f"Execution device (cuda:0, cpu, or auto, default: {default_device})")
     parser.add_argument("--batch-window", type=float, default=8.0, help="Micro-batching collection window in ms")
     parser.add_argument("--max-batch-size", type=int, default=16, help="Maximum batch size for dynamic batching")
@@ -44,6 +45,7 @@ def main():
     app = create_app(
         model=model,
         model_id=args.model,
+        served_model_name=args.served_model_name,
         batch_window_ms=args.batch_window,
         max_batch_size=args.max_batch_size,
         max_batch_tokens=args.max_batch_tokens,

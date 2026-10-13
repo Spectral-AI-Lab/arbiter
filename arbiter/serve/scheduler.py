@@ -5,8 +5,11 @@ bounding latency windows, token counts, and queue depth.
 """
 
 import asyncio
+import concurrent.futures
+import functools
 import logging
 import re
+import threading
 import time
 from dataclasses import dataclass
 from typing import Any, Optional
@@ -59,6 +62,16 @@ class DynamicBatchScheduler:
         self._worker_task: Optional[asyncio.Task] = None
         self._active_batch: list[QueuedTask] = []
         self._stopping = False
+        self._executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="arbiter-inference",
+        )
+        self._inference_active = threading.Event()
+
+    @property
+    def is_inference_active(self) -> bool:
+        """Return True if an inference batch is currently executing in the thread pool."""
+        return self._inference_active.is_set()
 
     async def start(self) -> None:
         """Start the background worker loop."""
@@ -94,6 +107,7 @@ class DynamicBatchScheduler:
             try:
                 await asyncio.wait_for(asyncio.shield(self._worker_task), timeout=drain_timeout)
             except (asyncio.TimeoutError, asyncio.CancelledError):
+                logger.warning("Drain timeout (%.1fs) exceeded during shutdown. Cancelling worker loop.", drain_timeout)
                 self._worker_task.cancel()
                 try:
                     await self._worker_task
@@ -107,6 +121,13 @@ class DynamicBatchScheduler:
                             task.future.set_exception(asyncio.CancelledError("Server shut down before batch finished"))
                     self._active_batch = []
             self._worker_task = None
+
+        # Cleanly shut down the dedicated thread pool executor
+        if self._inference_active.is_set():
+            logger.warning("Inference execution is still active in thread pool upon shutdown.")
+            self._executor.shutdown(wait=False, cancel_futures=True)
+        else:
+            self._executor.shutdown(wait=True)
         logger.info("DynamicBatchScheduler stopped.")
 
     def check_capacity(self, num_slots: int = 1) -> None:
@@ -127,7 +148,11 @@ class DynamicBatchScheduler:
         Validates task synchronously before enqueuing to prevent poisoned batches.
         Raises ValueError/TypeError immediately on invalid inputs or budget overflow.
         """
-        loop = loop or asyncio.get_running_loop()
+        if loop is None:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
         future = loop.create_future()
 
         # Handle singleton choice bypass (trivially 1.0 confidence)
@@ -161,7 +186,16 @@ class DynamicBatchScheduler:
                         raise ValueError(
                             f"Input sequence length ({raw_token_count} tokens) exceeds max_length ({max_length})."
                         )
-                    ctx_ids = self.model.tokenizer.encode(clean_ctx, add_special_tokens=False)
+                    # Safe truncation: reject if instruction and candidate options alone exceed max_length
+                    overhead_prompt = f"Contexte : \nInstruction : {clean_inst}\n\n{options_text}"
+                    overhead_tokens = len(self.model.tokenizer.encode(overhead_prompt, add_special_tokens=True))
+                    if overhead_tokens >= max_length:
+                        raise ValueError(
+                            f"Instruction and candidate options alone require {overhead_tokens} tokens, exceeding max_length ({max_length}). "
+                            "Cannot safely fit candidate options within budget."
+                        )
+                    avail_ctx_tokens = max(0, max_length - overhead_tokens)
+                    ctx_ids = self.model.tokenizer.encode(clean_ctx, add_special_tokens=False)[:avail_ctx_tokens]
                     while True:
                         trunc_ctx = self.model.tokenizer.decode(ctx_ids, skip_special_tokens=True)
                         new_prompt = f"Contexte : {trunc_ctx}\nInstruction : {clean_inst}\n\n{options_text}"
@@ -170,6 +204,10 @@ class DynamicBatchScheduler:
                             break
                         overshoot = max(1, len(ids) - max_length)
                         ctx_ids = ctx_ids[:-overshoot]
+                    if len(ids) > max_length:
+                        raise ValueError(
+                            f"Request length ({len(ids)} tokens) exceeds max_length ({max_length}) even with empty context."
+                        )
                     is_truncated = True
                 input_tokens = len(ids)
 
@@ -291,13 +329,16 @@ class DynamicBatchScheduler:
             start_time = time.monotonic()
 
             try:
-                results = await asyncio.to_thread(
+                self._inference_active.set()
+                loop = asyncio.get_running_loop()
+                fn = functools.partial(
                     self.model.decide_batch,
                     requests_payload,
                     batch_size=self.max_batch_size,
                     max_batch_tokens=self.max_batch_tokens,
                     max_attention_elements=self.max_attention_elements,
                 )
+                results = await loop.run_in_executor(self._executor, fn)
                 duration_ms = (time.monotonic() - start_time) * 1000.0
                 total_tokens = sum(r.get("input_tokens", 0) for r in results)
                 self.metrics.record_batch(len(active_batch), duration_ms, total_tokens)
@@ -311,6 +352,8 @@ class DynamicBatchScheduler:
                 for task in active_batch:
                     if not task.future.done():
                         task.future.set_exception(exc)
+            finally:
+                self._inference_active.clear()
         finally:
             # Safety settlement: ensure no future in batch is left pending
             for task in batch:

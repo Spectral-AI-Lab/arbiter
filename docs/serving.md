@@ -106,6 +106,7 @@ CLI options:
 - `--host`: Network interface (default: `0.0.0.0`).
 - `--port`: Port to listen on (default: `8000`).
 - `--model`: Hugging Face Hub ID (e.g. `spectral-ai-lab/arbiter-272m` or `spectral-ai-lab/arbiter-272m-typed`) or local checkpoint directory.
+- `--served-model-name`: Explicit canonical model identity to expose in responses and validate against in incoming requests (overrides directory heuristics; env var `ARBITER_SERVED_MODEL_NAME`).
 - `--batch-window`: Micro-batch window in milliseconds (default: `8.0`).
 - `--max-batch-size`: Max batch size for grouped execution (default: `16`).
 - `--max-batch-tokens`: Maximum total tokens per batch (default: `8192`).
@@ -262,8 +263,10 @@ curl -s http://localhost:8000/decide \
 # Build
 docker build -t arbiter-serve:gpu -f docker/Dockerfile.gpu .
 
-# Run on GPU 0
-docker run --gpus all -d -p 8000:8000 --name arbiter-gpu arbiter-serve:gpu
+# Run on GPU 0 with host Hugging Face cache
+docker run --gpus all -d -p 8000:8000 \
+  -v ${HF_HOME:-$HOME/.cache/huggingface}:/root/.cache/huggingface \
+  --name arbiter-gpu arbiter-serve:gpu
 ```
 
 ### CPU Container
@@ -272,6 +275,8 @@ docker run --gpus all -d -p 8000:8000 --name arbiter-gpu arbiter-serve:gpu
 # Build
 docker build -t arbiter-serve:cpu -f docker/Dockerfile.cpu .
 
-# Run on CPU
-docker run -d -p 8000:8000 --name arbiter-cpu arbiter-serve:cpu
+# Run on CPU with host Hugging Face cache
+docker run -d -p 8000:8000 \
+  -v ${HF_HOME:-$HOME/.cache/huggingface}:/root/.cache/huggingface \
+  --name arbiter-cpu arbiter-serve:cpu
 ```
