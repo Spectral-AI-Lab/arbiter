@@ -13,7 +13,7 @@ datasets:
 ---
 # ARBITER-272M-Typed
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb) [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?logo=github)](https://github.com/Spectral-AI-Lab/arbiter)
 
 Try ARBITER in your browser with installation, ready-to-run examples, and expected answers. Select `spectral-ai-lab/arbiter-272m-typed` in the model selection cell, then run the notebook.
 
@@ -102,6 +102,17 @@ print(f"Selected: {result['selected_key']} ({result['confidence']:.2%})")
 ```
 
 Expected semantic answer for this illustration: `payments`; it is not an additional benchmark result. Native batching uses the same API as ARBITER Base.
+
+### Docker & Online Serving (vLLM Compatible)
+
+Deploy the Typed specialist with zero local setup using the official container image:
+
+```bash
+docker run --gpus all -d -p 8000:8000 \
+  -v ~/.cache/huggingface:/root/.cache/huggingface \
+  ghcr.io/spectral-ai-lab/arbiter-serve:latest \
+  --model spectral-ai-lab/arbiter-272m-typed
+```
 
 ## Scope and licensing
 

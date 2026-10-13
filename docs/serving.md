@@ -255,28 +255,49 @@ curl -s http://localhost:8000/decide \
 
 ---
 
-## Docker Deployment
+## Docker & Container Deployment
 
-### GPU Container (CUDA 12)
+### 1. Pre-Built Images from GitHub Container Registry (Recommended)
 
+Pre-built, certified container images are published on **GitHub Container Registry (`ghcr.io`)**:
+
+#### Run on GPU (NVIDIA CUDA 12, Blackwell / RTX 5090 native support)
 ```bash
-# Build
-docker build -t arbiter-serve:gpu -f docker/Dockerfile.gpu .
-
-# Run on GPU 0 with host Hugging Face cache
 docker run --gpus all -d -p 8000:8000 \
   -v ${HF_HOME:-$HOME/.cache/huggingface}:/root/.cache/huggingface \
-  --name arbiter-gpu arbiter-serve:gpu
+  --name arbiter-gpu \
+  ghcr.io/spectral-ai-lab/arbiter-serve:latest
 ```
 
-### CPU Container
-
+#### Run on CPU
 ```bash
-# Build
-docker build -t arbiter-serve:cpu -f docker/Dockerfile.cpu .
-
-# Run on CPU with host Hugging Face cache
 docker run -d -p 8000:8000 \
   -v ${HF_HOME:-$HOME/.cache/huggingface}:/root/.cache/huggingface \
-  --name arbiter-cpu arbiter-serve:cpu
+  --name arbiter-cpu \
+  ghcr.io/spectral-ai-lab/arbiter-serve:cpu
+```
+
+#### Serve the Typed Specialist
+```bash
+docker run --gpus all -d -p 8000:8000 \
+  -v ${HF_HOME:-$HOME/.cache/huggingface}:/root/.cache/huggingface \
+  --name arbiter-gpu-typed \
+  ghcr.io/spectral-ai-lab/arbiter-serve:latest \
+  --model spectral-ai-lab/arbiter-272m-typed
+```
+
+---
+
+### 2. Building from Source (Local Docker / Podman)
+
+If you prefer building the images locally:
+
+#### GPU Image:
+```bash
+docker build -t arbiter-serve:gpu -f docker/Dockerfile.gpu .
+```
+
+#### CPU Image:
+```bash
+docker build -t arbiter-serve:cpu -f docker/Dockerfile.cpu .
 ```

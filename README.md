@@ -118,6 +118,47 @@ print(results["answers"])
 
 ---
 
+## Online Serving & Docker Deployment (vLLM Compatible)
+
+ARBITER includes a high-performance asynchronous microservice supporting the official [vLLM Structured Decisions specification (`POST /v1/systemone`)](https://docs.vllm.ai/en/latest/serving/online_serving/structured_decisions/) with dynamic micro-batching:
+
+### One-Line Launch with Docker / Podman
+
+Run directly from **GitHub Container Registry** with zero installation:
+
+```bash
+# GPU (Recommended, NVIDIA CUDA 12, Blackwell / RTX 5090 ready)
+docker run --gpus all -d -p 8000:8000 \
+  -v ~/.cache/huggingface:/root/.cache/huggingface \
+  ghcr.io/spectral-ai-lab/arbiter-serve:latest
+
+# CPU
+docker run -d -p 8000:8000 \
+  -v ~/.cache/huggingface:/root/.cache/huggingface \
+  ghcr.io/spectral-ai-lab/arbiter-serve:cpu
+```
+
+### Quick Verification
+
+```bash
+# Health check
+curl -s http://localhost:8000/health
+
+# Native decision
+curl -s http://localhost:8000/decide \
+  -H "Content-Type: application/json" \
+  -d '{"context": "Customer refund inquiry", "instruction": "Route query", "criteria": {"billing": "Refunds", "support": "General"}}'
+
+# vLLM Structured Decisions (/v1/systemone)
+curl -s http://localhost:8000/v1/systemone \
+  -H "Content-Type: application/json" \
+  -d '{"state": {"text": "Delayed delivery"}, "questions": {"urgent": {"type": "noul", "instructions": "Escalate?"}}}'
+```
+
+For complete CLI options, micro-batching tuning, and benchmark measurements, see the [Online Serving Guide](docs/serving.md).
+
+---
+
 ## Workflows
 
 - [Online serving & vLLM Structured Decisions](docs/serving.md): `/v1/systemone`, `/decide`, and dynamic micro-batching.
