@@ -21,7 +21,7 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,finetuning,benchmark]'
+      - run: python -m pip install -e '.[dev,finetuning,benchmark,serve]'
       - run: python -m pytest tests benchmark/tests -m 'not integration' -q
       - run: python scripts/check_docs.py
       - run: python -m build
