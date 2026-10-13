@@ -19,7 +19,7 @@ datasets:
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?logo=github)](https://github.com/Spectral-AI-Lab/arbiter)
-[![Docker Image](https://img.shields.io/badge/Docker-GHCR%20Images-blue?logo=docker)](https://github.com/Spectral-AI-Lab/arbiter/pkgs/container/arbiter-serve)
+[![Docker Image](https://img.shields.io/badge/Docker-Online%20Serving-blue?logo=docker)](https://github.com/Spectral-AI-Lab/arbiter/blob/main/docs/serving.md)
 [![PyPI](https://img.shields.io/pypi/v/spectral-arbiter?color=blue&logo=pypi)](https://pypi.org/project/spectral-arbiter/)
 
 </div>
