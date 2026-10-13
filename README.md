@@ -120,6 +120,7 @@ print(results["answers"])
 
 ## Workflows
 
+- [Online serving & vLLM Structured Decisions](docs/serving.md): `/v1/systemone`, `/decide`, and dynamic micro-batching.
 - [Native batch inference](docs/batching.md): `decide_batch()` and `predict_batch()`.
 - [Fine-tuning commands](finetuning/README.md): build data, validate, train, resume and evaluate.
 - [Guided notebook](notebooks/finetuning_arbiter.ipynb): the same workflow, cell by cell.

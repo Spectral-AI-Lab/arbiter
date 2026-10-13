@@ -1,0 +1,26 @@
+# ARBITER Inference Server — CPU Optimized
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# Install lightweight CPU PyTorch wheel first to minimize image size
+RUN pip install --upgrade pip && \
+    pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# Copy package and install serving dependencies
+COPY pyproject.toml README.md ./
+COPY arbiter/ ./arbiter/
+RUN pip install .[serve]
+
+ENV ARBITER_MODEL_PATH="spectral-ai-lab/arbiter-272m" \
+    ARBITER_DEVICE="cpu"
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
+ENTRYPOINT ["python3", "-m", "arbiter.serve", "--host", "0.0.0.0", "--port", "8000", "--device", "cpu"]

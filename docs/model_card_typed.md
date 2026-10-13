@@ -13,6 +13,10 @@ datasets:
 ---
 # ARBITER-272M-Typed
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb)
+
+Try ARBITER in your browser with installation, ready-to-run examples, and expected answers. Select `spectral-ai-lab/arbiter-272m-typed` in the model selection cell, then run the notebook.
+
 **A lightweight Typed Decisions specialist: 76.45% accuracy, up from 65.50% for ARBITER Base, with broadly retained routing and classification performance.**
 
 This model fine-tunes [ARBITER-272M](https://huggingface.co/spectral-ai-lab/arbiter-272m) on Typed Decisions. It supports categorical `choice`, boolean `noul` and ordinal `score` requests using the same ARBITER API and architecture. It jointly encodes context, instruction and options; it is not a generative chat model.

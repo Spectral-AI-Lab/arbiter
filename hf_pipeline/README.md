@@ -8,6 +8,10 @@ tags:
 ---
 # EmbeddingGemma 2 — Decision Pipeline
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/spectral-ai-lab/arbiter/blob/main/notebooks/getting_started.ipynb)
+
+Try ARBITER in your browser with installation, ready-to-run examples, and expected answers. The notebook loads ARBITER Base by default and also lets you try Typed.
+
 Local Hugging Face pipeline utilizing official Google base weights, without quantization. Uses CPU and `dtype="auto"` by default. The checkpoint revision is anchored in `config.json`. No external hub repo published.
 
 ```bash

@@ -1,0 +1,32 @@
+# ARBITER Inference Server — NVIDIA GPU (CUDA 12, Python 3.12)
+FROM nvidia/cuda:12.4.1-runtime-ubuntu24.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_BREAK_SYSTEM_PACKAGES=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package and install with serving dependencies
+COPY pyproject.toml README.md ./
+COPY arbiter/ ./arbiter/
+RUN pip3 install --upgrade pip && \
+    pip3 install .[serve]
+
+ENV ARBITER_MODEL_PATH="spectral-ai-lab/arbiter-272m" \
+    ARBITER_DEVICE="cuda:0"
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
+ENTRYPOINT ["python3", "-m", "arbiter.serve", "--host", "0.0.0.0", "--port", "8000"]
