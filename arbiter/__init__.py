@@ -6,5 +6,5 @@ Official release package for ARBITER-272M.
 from .configuration_arbiter import ArbiterConfig
 from .modeling_arbiter import ArbiterModel, SetTransformerHyperFiLMHead
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __all__ = ["ArbiterConfig", "ArbiterModel", "SetTransformerHyperFiLMHead"]
